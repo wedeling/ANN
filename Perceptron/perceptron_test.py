@@ -33,7 +33,7 @@ plt.close('all')
 ##########################################################
 
 #number of data points
-N = 100
+N = 1000
 
 #N draws from multivariate normal with mean mu and covariance matrix Sigma
 mu = np.array([0, 0])
@@ -70,7 +70,7 @@ for i in range(N):
 
 #train the perceptron
 print(perceptron.compute_loss())
-N_epoch = 1000
+N_epoch = 10000
 perceptron.train(N_epoch, store_loss = True)
 print(perceptron.compute_loss())
 
@@ -100,7 +100,7 @@ ax = fig.add_subplot(224, title='validation')
 
 loss_val = 0
 
-for i in range(N):
+for i in range(N_val):
     #trained prediction
     y_hat = perceptron.feed_forward(X_val[i])
     
