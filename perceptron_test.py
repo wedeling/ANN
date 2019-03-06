@@ -69,10 +69,10 @@ for i in range(N):
         ax.plot(X[i, 0], X[i, 1], 'r*')
 
 #train the perceptron
-print perceptron.compute_loss()
+print(perceptron.compute_loss())
 N_epoch = 1000
 perceptron.train(N_epoch, store_loss = True)
-print perceptron.compute_loss()
+print(perceptron.compute_loss())
 
 #plot the results of the trained perceptron
 ax = fig.add_subplot(223, title='after training')
@@ -112,7 +112,7 @@ for i in range(N):
     if y_hat != y_val[i]:
         loss_val += 1
 
-print 'Number of validation classification errors=', loss_val 
+print('Number of validation classification errors=', loss_val)
 
 plt.tight_layout()
 
