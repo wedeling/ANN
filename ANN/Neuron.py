@@ -18,8 +18,7 @@ class Neuron:
     #What else????
     def compute_delta_ho(self):
         print('compute delta_ho')
-        
-    
+       
     def compute_grad_w(self):
         self.compute_delta_ho()
         
