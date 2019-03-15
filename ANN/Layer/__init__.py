@@ -1,4 +1,4 @@
-from ANN import *
+from ANN import ANN
 import numpy as np      
 import Neuron as neuron
 
