@@ -1,6 +1,5 @@
-from ANN import ANN
-import numpy as np      
-import Neuron as neuron
+from .ANN import ANN      
+#import Neuron as neuron
 
 class Layer(ANN):
     
@@ -22,8 +21,4 @@ class Layer(ANN):
         #if this layer is hidden
         else:
             self.layer_rm1 = super.get_layer(self.r-1)        
-            self.layer_rp1 = super.get_layer(self.r+1)        
-       
-    def set_h(self, idx):
-        self.h[idx] = 1
-        
+            self.layer_rp1 = super.get_layer(self.r+1)

@@ -1,3 +1,6 @@
+import numpy as np
+from Layer import Layer
+
 class ANN:
 
     def __init__(self, X, y, alpha = 1.0):
