@@ -1,12 +1,17 @@
+import numpy as np
+
 class Neuron:
     
-    def __init__(self, typ, layer_rp1, layer_r, layer_rm1):
+    def __init__(self, typ, layer_rm1, layer_r, layer_rp1):
         
         self.typ = typ     
         
         self.layer_rp1 = layer_rp1
         self.layer_r = layer_r
         self.layer_rm1 = layer_rm1
+        
+        #initialize the weights
+        self.w = np.random.randn(self.layer_rm1.n_neurons)
         
     #Compute the value of h, i.e. the post activation value of the neuron
     #Also update the value in layer_rp1 using its set_h subroutine
@@ -21,5 +26,3 @@ class Neuron:
        
     def compute_grad_w(self):
         self.compute_delta_ho()
-        
-import numpy as np

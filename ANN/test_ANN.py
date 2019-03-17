@@ -18,6 +18,7 @@ def get_y(X):
 
 import numpy as np
 import matplotlib.pyplot as plt
+from base import NN
 
 plt.close('all')
 
@@ -35,3 +36,9 @@ X = np.random.multivariate_normal(mu, Sigma, size = N)
 
 #get the labels
 y, idx1, idxm1 = get_y(X)
+
+#Test ANN
+
+ann = NN.ANN(X, y)
+
+
