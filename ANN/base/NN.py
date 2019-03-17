@@ -1,5 +1,5 @@
 import numpy as np
-from Layer import Layer
+from .Layer import Layer
 
 class ANN:
 
@@ -24,12 +24,14 @@ class ANN:
         self.n_neurons_hid = 2
 
         #number of output neurons
-        self.n_outputs = 1
+        self.n_out = 1
 
         self.layers = []
         
         #add the input layer
-        self.layers.append(Layer(self.n_in, 0)) 
+        self.layers.append(Layer(self.n_in, 0, self.n_layers)) 
         
         for r in range(1, self.n_layers-1):
-            self.layers.append(Layer(self.n_neurons_hid, r))
+            self.layers.append(Layer(self.n_neurons_hid, r, self.n_layers))
+        
+        self.layers.append(Layer(self.n_out, self.n_layers, self.n_layers))
