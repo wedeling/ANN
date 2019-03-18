@@ -31,7 +31,7 @@ N = 100
 
 #N draws from multivariate normal with mean mu and covariance matrix Sigma
 mu = np.array([0, 0])
-Sigma = np.array([[1, 0.0], [0.0, 1.0]])
+Sigma = np.array([[1.0, 0.0], [0.0, 1.0]])
 X = np.random.multivariate_normal(mu, Sigma, size = N)
 
 #get the labels
@@ -41,4 +41,6 @@ y, idx1, idxm1 = get_y(X)
 
 ann = NN.ANN(X, y)
 
-
+for i in range(N):
+    #print(ann.feed_forward(X[i]), '-----', ann.layers[-2].h, '-----', ann.layers[-1].neurons[0].w)
+    print(ann.feed_forward(X[i]))
