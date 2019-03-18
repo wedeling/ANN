@@ -29,14 +29,14 @@ class ANN:
         self.layers = []
         
         #add the input layer
-        self.layers.append(Layer(self.n_in, 0, self.n_layers)) 
+        self.layers.append(Layer(self.n_in, 0, self.n_layers, 'linear')) 
         
         #add the hidden layers
         for r in range(1, self.n_layers):
-            self.layers.append(Layer(self.n_neurons_hid, r, self.n_layers))
+            self.layers.append(Layer(self.n_neurons_hid, r, self.n_layers, 'relu'))
         
         #add the output layer
-        self.layers.append(Layer(self.n_out, self.n_layers, self.n_layers))
+        self.layers.append(Layer(self.n_out, self.n_layers, self.n_layers, 'linear'))
         
         self.connect_layers()
    
@@ -48,4 +48,13 @@ class ANN:
         
         for i in range(1, self.n_layers):
             self.layers[i].meet_the_neighbors(self.layers[i-1], self.layers[i+1])
+    
+    def feed_forward(self, X):
         
+        #set the features at the output of in the input layer
+        self.layers[0].h = X
+        
+        for i in range(1, self.n_layers+1):
+            self.layers[i].compute_output()
+            
+        return self.layers[-1].h
