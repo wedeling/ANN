@@ -39,6 +39,7 @@ class Layer:
 
         #initialize the weight matrix
         self.W = np.zeros([self.layer_rm1.n_neurons, self.n_neurons])
+        self.L_grad_W = np.zeros([self.layer_rm1.n_neurons, self.n_neurons])
 
         neurons = []
         

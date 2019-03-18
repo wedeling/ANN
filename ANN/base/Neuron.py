@@ -78,6 +78,8 @@ class Neuron:
             #compute the gradient of the activation function, and store in layer
             self.layer_r.grad_Phi[self.j] = self.compute_grad_Phi()
             
+            #NOW COMPUTE l_GRAD_W FOR THIS NEURON BY LOOPING OVER ALL INCOMING EDGES
+            
         else:
             print('Can only initialize delta_oo in output layer')
             import sys; sys.exit()
@@ -101,4 +103,6 @@ class Neuron:
         #compute the gradient of the activation function, 
         #and store in this layer, to be used in the next backprop iteration
         self.layer_r.grad_Phi[self.j] = self.compute_grad_Phi()
+
+        #NOW COMPUTE l_GRAD_W FOR THIS NEURON BY LOOPING OVER ALL INCOMING EDGES
         
