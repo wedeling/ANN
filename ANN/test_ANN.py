@@ -39,8 +39,8 @@ y, idx1, idxm1 = get_y(X)
 
 #Test ANN
 
-ann = NN.ANN(X, y)
+ann = NN.ANN(X, y, alpha = 0.1)
 
-for i in range(N):
-    #print(ann.feed_forward(X[i]), '-----', ann.layers[-2].h, '-----', ann.layers[-1].neurons[0].w)
-    print(ann.feed_forward(X[i]))
+ann.compute_loss()
+ann.train(10000)
+ann.compute_loss()

@@ -60,6 +60,8 @@ class Layer:
             #initialize delta_oo
             for i in range(self.n_neurons):
                 self.neurons[i].compute_delta_oo(y_i)
+                self.neurons[i].compute_L_grad_W()
         else:
             for i in range(self.n_neurons):
                 self.neurons[i].compute_delta_ho()
+                self.neurons[i].compute_L_grad_W()

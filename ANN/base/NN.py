@@ -8,8 +8,14 @@ class ANN:
         #the features
         self.X = X
         
+        #number of training data points
+        self.n_train = X.shape[0]
+        
         #the training outputs
         self.y = y
+        
+        #training rate
+        self.alpha = alpha
         
         #number of input nodes
         try:
@@ -68,3 +74,34 @@ class ANN:
         #start back propagation over hidden layers, starting with layer before output layer
         for i in range(self.n_layers, 0, -1):
             self.layers[i].back_prop(y_i)
+        
+    #update step of the weights
+    def epoch(self, X_i, y_i):
+        
+        self.feed_forward(X_i)
+        self.back_prop(y_i)
+        
+        for i in range(1, self.n_layers+1):
+            #gradient descent update step
+            self.layers[i].W = self.layers[i].W - self.alpha*self.layers[i].L_grad_W
+            
+    def train(self, n_epoch):
+        
+        for i in range(n_epoch):
+
+            #select a random training instance (X, y)
+            rand_idx = np.random.randint(0, self.n_train)
+            
+            self.epoch(self.X[rand_idx], self.y[rand_idx])
+            
+    def compute_loss(self):
+        
+        n_misclass = 0.0
+        
+        for i in range(self.n_train):
+            y_hat_i = np.sign(self.feed_forward(self.X[i]))
+            
+            if y_hat_i != self.y[i]:
+                n_misclass += 1
+                
+        print('Number of misclassifications = ', n_misclass)

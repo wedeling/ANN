@@ -76,9 +76,8 @@ class Neuron:
             self.layer_r.delta_ho[self.j] = self.delta_ho
             
             #compute the gradient of the activation function, and store in layer
-            self.layer_r.grad_Phi[self.j] = self.compute_grad_Phi()
-            
-            #NOW COMPUTE l_GRAD_W FOR THIS NEURON BY LOOPING OVER ALL INCOMING EDGES
+            self.grad_Phi = self.compute_grad_Phi()
+            self.layer_r.grad_Phi[self.j] = self.grad_Phi
             
         else:
             print('Can only initialize delta_oo in output layer')
@@ -88,7 +87,7 @@ class Neuron:
         #get the delta_ho values of the next layer (layer r+1)
         delta_h_rp1_o = self.layer_rp1.delta_ho
         
-        #get the grad_Phi value of the next layer
+        #get the grad_Phi values of the next layer
         grad_Phi_rp1 = self.layer_rp1.grad_Phi
         
         #get the weights connecting this neuron to all neurons in the next layer
@@ -102,7 +101,14 @@ class Neuron:
         
         #compute the gradient of the activation function, 
         #and store in this layer, to be used in the next backprop iteration
-        self.layer_r.grad_Phi[self.j] = self.compute_grad_Phi()
-
-        #NOW COMPUTE l_GRAD_W FOR THIS NEURON BY LOOPING OVER ALL INCOMING EDGES
+        self.grad_Phi = self.compute_grad_Phi()
+        self.layer_r.grad_Phi[self.j] = self.grad_Phi
+    
+    #compute the gradient of the loss function wrt the weights
+    def compute_L_grad_W(self):
         
+        #The gradient of L wrt all weights of the incoming edges of this neuron
+        self.L_grad_W = self.delta_ho*self.grad_Phi*self.layer_rm1.h
+        
+        #store the result in the Layer_r object
+        self.layer_r.L_grad_W[:, self.j] = self.L_grad_W
