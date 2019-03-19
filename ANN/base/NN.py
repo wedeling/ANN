@@ -84,7 +84,8 @@ class ANN:
         for i in range(1, self.n_layers+1):
             #gradient descent update step
             self.layers[i].W = self.layers[i].W - self.alpha*self.layers[i].L_grad_W
-            
+    
+    #train the neural network        
     def train(self, n_epoch):
         
         for i in range(n_epoch):
@@ -93,7 +94,8 @@ class ANN:
             rand_idx = np.random.randint(0, self.n_train)
             
             self.epoch(self.X[rand_idx], self.y[rand_idx])
-            
+      
+    #compute the number of misclassifications
     def compute_loss(self):
         
         n_misclass = 0.0
