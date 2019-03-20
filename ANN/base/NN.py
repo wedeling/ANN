@@ -107,3 +107,13 @@ class ANN:
                 n_misclass += 1
                 
         print('Number of misclassifications = ', n_misclass)
+        
+    #return the number of weights
+    def get_n_weights(self):
+        
+        n_weights = 0
+        
+        for i in range(1, self.n_layers+1):
+            n_weights += self.layers[i].W.size
+            
+        print('This neural network has', n_weights, 'weights.')
