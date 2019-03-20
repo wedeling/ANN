@@ -24,16 +24,19 @@ class ANN:
             self.n_in = 1
         
         #number of layers (hidden + output)
-        self.n_layers = 3
+        self.n_layers = 2
 
         #number of neurons in a hidden layer
-        self.n_neurons_hid = 10
+        self.n_neurons_hid = 128
 
         #number of output neurons
         self.n_out = 1
         
         #loss function type
-        self.loss = 'perceptron_crit'
+        #self.loss = 'perceptron_crit'
+        self.loss = 'hinge'
+
+        self.loss_vals = []
 
         self.layers = []
         
@@ -86,7 +89,7 @@ class ANN:
             self.layers[i].W = self.layers[i].W - self.alpha*self.layers[i].L_grad_W
     
     #train the neural network        
-    def train(self, n_epoch):
+    def train(self, n_epoch, store_loss = False):
         
         for i in range(n_epoch):
 
@@ -94,6 +97,15 @@ class ANN:
             rand_idx = np.random.randint(0, self.n_train)
             
             self.epoch(self.X[rand_idx], self.y[rand_idx])
+            
+            if store_loss == True:
+                l = 0.0
+                for k in range(self.n_out):
+                    l += self.layers[-1].neurons[k].L_i
+                self.loss_vals.append(l)
+                
+                if np.mod(i, 100) == 0:
+                    print(np.mean(self.loss_vals))
       
     #compute the number of misclassifications
     def compute_loss(self):

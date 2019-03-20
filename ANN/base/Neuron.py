@@ -67,10 +67,20 @@ class Neuron:
                 L_i = np.max([-y_i*self.h, 0.0])
                 if L_i == 0.0:
                     self.delta_ho = 0.0
-                elif y_i == 1.0 and self.h < 0.0:
+                elif y_i == 1.0:
                     self.delta_ho = -1.0
                 else:
                     self.delta_ho = 1.0
+            elif self.loss == 'hinge' and self.activation == 'linear':
+                L_i = np.max([1.0 - y_i*self.h, 0.0])
+                if L_i == 0.0:
+                    self.delta_ho = 0.0
+                elif y_i == 1.0:
+                    self.delta_ho = -1.0
+                else:
+                    self.delta_ho = 1.0
+            
+            self.L_i = L_i
             
             #store the value in the r-th layer object
             self.layer_r.delta_ho[self.j] = self.delta_ho

@@ -48,5 +48,5 @@ def get_y_quadrant(X, N):
     y[idxm1] = -1.0
 
     return y, idx1, idxm1
-    
+
 import numpy as np
