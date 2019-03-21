@@ -27,14 +27,15 @@ class ANN:
         self.n_layers = 2
 
         #number of neurons in a hidden layer
-        self.n_neurons_hid = 128
+        self.n_neurons_hid = 100
 
         #number of output neurons
         self.n_out = 1
         
         #loss function type
         #self.loss = 'perceptron_crit'
-        self.loss = 'hinge'
+        #self.loss = 'hinge'
+        self.loss = 'logistic'
 
         self.loss_vals = []
 
@@ -63,7 +64,7 @@ class ANN:
     
     #run the network forward
     def feed_forward(self, X):
-        
+               
         #set the features at the output of in the input layer
         self.layers[0].h = X
         
@@ -89,14 +90,16 @@ class ANN:
             self.layers[i].W = self.layers[i].W - self.alpha*self.layers[i].L_grad_W
     
     #train the neural network        
-    def train(self, n_epoch, store_loss = False):
+    def train(self, n_epoch, store_loss = False, check_derivative = False):
         
         for i in range(n_epoch):
 
             #select a random training instance (X, y)
             rand_idx = np.random.randint(0, self.n_train)
-            
             self.epoch(self.X[rand_idx], self.y[rand_idx])
+            
+            if check_derivative == True and np.mod(i, 1000) == 0:
+                self.check_derivative(self.X[rand_idx], self.y[rand_idx], 10)
             
             if store_loss == True:
                 l = 0.0
@@ -104,8 +107,55 @@ class ANN:
                     l += self.layers[-1].neurons[k].L_i
                 self.loss_vals.append(l)
                 
-                if np.mod(i, 100) == 0:
+                if np.mod(i, 1000) == 0:
                     print(np.mean(self.loss_vals))
+                    
+    #compare a random back propagation derivative with a finite-difference approximation
+    def check_derivative(self, X_i, y_i, n_checks):
+        
+        eps = 1e-8
+        print('==============================================')
+        print('Performing derivative check')
+        
+        for i in range(n_checks):
+            
+            #'align' the netwrok with the newly computed gradient and compute the loss function
+            self.feed_forward(X_i)
+            self.layers[-1].neurons[0].compute_loss(y_i)            
+            L_i_old = self.layers[-1].neurons[0].L_i
+
+            #select a random neuron which has a nonzero gradient            
+            L_grad_W_old = 0.0
+            #while L_grad_W_old == 0.0:
+
+            #select a random neuron
+            layer_idx = np.random.randint(1, self.n_layers+1)
+            neuron_idx = np.random.randint(self.layers[layer_idx].n_neurons)
+            weight_idx = np.random.randint(self.layers[layer_idx-1].n_neurons)
+             
+            #the unperturbed weight and gradient
+            w_old = self.layers[layer_idx].W[weight_idx, neuron_idx]
+            L_grad_W_old = self.layers[layer_idx].L_grad_W[weight_idx, neuron_idx]
+            
+            #perturb weight
+            self.layers[layer_idx].W[weight_idx, neuron_idx] += eps
+            
+            #run the netwrok forward and compute loss
+            self.feed_forward(X_i)
+            self.layers[-1].neurons[0].compute_loss(y_i)            
+            L_i_new = self.layers[-1].neurons[0].L_i
+                        
+            #simple FD approximation of the gradient
+            L_grad_W_FD = (L_i_new - L_i_old)/eps
+  
+            print('Back-propogation gradient:', L_grad_W_old)
+            print('FD approximation gradient:', L_grad_W_FD)
+           
+            #reset weights and network
+            self.layers[layer_idx].W[weight_idx, neuron_idx] = w_old
+            self.feed_forward(X_i)
+
+        print('==============================================')
       
     #compute the number of misclassifications
     def compute_loss(self):

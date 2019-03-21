@@ -22,7 +22,7 @@ Sigma = np.array([[1.0, 0.0], [0.0, 1.0]])
 X = np.random.multivariate_normal(mu, Sigma, size = N)
 
 #get the labels
-y, idx1, idxm1 = tf.get_y_lin(X, N)
+y, idx1, idxm1 = tf.get_y_quadrant(X, N)
 
 ##############
 #plot the data
@@ -53,7 +53,7 @@ for i in range(N):
 ##############
 
 ann.compute_loss()
-ann.train(90000, store_loss=True)
+ann.train(3000, store_loss=True, check_derivative=True)
 ann.compute_loss()
 
 ############################################
@@ -79,7 +79,7 @@ ax = fig.add_subplot(224, title='validation')
 X_val = np.random.multivariate_normal(mu, Sigma, size = N)
 
 #get the labels
-y_val, idx1, idxm1 = tf.get_y_lin(X, N)
+y_val, idx1, idxm1 = tf.get_y_quadrant(X, N)
 
 for i in range(N):
     y_hat_val = ann.feed_forward(X_val[i])

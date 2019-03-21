@@ -53,7 +53,7 @@ ann = NN.ANN(X, y, alpha = 0.05)
 ##############
 
 ann.compute_loss()
-ann.train(200000, store_loss = True)
+ann.train(20000, store_loss = True)
 ann.compute_loss()
 
 if N_feat == 2:

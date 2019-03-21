@@ -57,30 +57,57 @@ class Neuron:
                 return 1.0
             else:
                 return 0.0
-
+            
+    #compute the value of the loss function
+    def compute_loss(self, y_i):
+        
+        #only compute if in an output layer
+        if self.layer_rp1 == None:
+            if self.loss == 'perceptron_crit' and self.activation == 'linear':
+                self.L_i = np.max([-y_i*self.h, 0.0])
+            elif self.loss == 'hinge' and self.activation == 'linear':
+                self.L_i = np.max([1.0 - y_i*self.h, 0.0])
+            elif self.loss == 'logistic' and self.activation == 'linear':
+                y_hat_i = self.h
+                self.L_i = np.log(1.0 + np.exp(-y_i*y_hat_i))
+            else:
+                print('Cannot compute loss: unknown loss and/or activation function')
+                import sys; sys.exit()
+    
     #initialize the value of delta_ho at the output layer
     def compute_delta_oo(self, y_i):
         #if the neuron is in the output layer, initialze delta_oo
         if self.layer_rp1 == None:
+            
+            #compute the loss function
+            self.compute_loss(y_i)
+            
             #in the case of the perceptron criterion loss
             if self.loss == 'perceptron_crit' and self.activation == 'linear':
-                L_i = np.max([-y_i*self.h, 0.0])
-                if L_i == 0.0:
+                
+                if self.L_i == 0.0:
                     self.delta_ho = 0.0
                 elif y_i == 1.0:
                     self.delta_ho = -1.0
                 else:
                     self.delta_ho = 1.0
+                    
             elif self.loss == 'hinge' and self.activation == 'linear':
-                L_i = np.max([1.0 - y_i*self.h, 0.0])
-                if L_i == 0.0:
+                
+                if self.L_i == 0.0:
                     self.delta_ho = 0.0
                 elif y_i == 1.0:
                     self.delta_ho = -1.0
                 else:
                     self.delta_ho = 1.0
-            
-            self.L_i = L_i
+                    
+            elif self.loss == 'logistic' and self.activation == 'linear':
+                
+                y_hat_i = self.h
+                if y_i == 1.0: 
+                    self.delta_ho = -np.exp(-y_hat_i)/(1.0 + np.exp(-y_hat_i))
+                else:
+                    self.delta_ho = np.exp(y_hat_i)/(1.0 + np.exp(y_hat_i))
             
             #store the value in the r-th layer object
             self.layer_r.delta_ho[self.j] = self.delta_ho
