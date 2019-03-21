@@ -27,7 +27,7 @@ class ANN:
         self.n_layers = 2
 
         #number of neurons in a hidden layer
-        self.n_neurons_hid = 100
+        self.n_neurons_hid = 128
 
         #number of output neurons
         self.n_out = 1
@@ -113,9 +113,9 @@ class ANN:
     #compare a random back propagation derivative with a finite-difference approximation
     def check_derivative(self, X_i, y_i, n_checks):
         
-        eps = 1e-8
+        eps = 1e-12
         print('==============================================')
-        print('Performing derivative check')
+        print('Performing derivative check of', n_checks, 'randomly selected neurons.')
         
         for i in range(n_checks):
             

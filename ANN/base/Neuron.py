@@ -17,7 +17,7 @@ class Neuron:
         self.layer_rp1 = layer_rp1
         
         #initialize the weights
-        self.layer_r.W[:, j] = np.random.randn(self.layer_rm1.n_neurons)
+        self.layer_r.W[:, j] = np.random.randn(self.layer_rm1.n_neurons)*np.sqrt(1.0/layer_rm1.n_neurons)
         
         #pre-activation value
         self.a = 0.0        

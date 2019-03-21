@@ -53,7 +53,7 @@ for i in range(N):
 ##############
 
 ann.compute_loss()
-ann.train(3000, store_loss=True, check_derivative=True)
+ann.train(5000, store_loss=True, check_derivative=True)
 ann.compute_loss()
 
 ############################################
