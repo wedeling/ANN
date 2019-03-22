@@ -39,6 +39,8 @@ class Neuron:
             self.h = a
         elif self.activation == 'relu':
             self.h = np.max([0, a])
+        elif self.activation == 'tanh':
+            self.h = np.tanh(a)
         else:
             print('Unknown activation type')
             import sys; sys.exit()
@@ -57,19 +59,22 @@ class Neuron:
                 return 1.0
             else:
                 return 0.0
+        elif self.activation == 'tanh':
+            return 1.0 - self.h**2
             
     #compute the value of the loss function
     def compute_loss(self, y_i):
         
         #only compute if in an output layer
         if self.layer_rp1 == None:
-            if self.loss == 'perceptron_crit' and self.activation == 'linear':
+            if self.loss == 'perceptron_crit':
                 self.L_i = np.max([-y_i*self.h, 0.0])
-            elif self.loss == 'hinge' and self.activation == 'linear':
+            elif self.loss == 'hinge':
                 self.L_i = np.max([1.0 - y_i*self.h, 0.0])
-            elif self.loss == 'logistic' and self.activation == 'linear':
-                y_hat_i = self.h
-                self.L_i = np.log(1.0 + np.exp(-y_i*y_hat_i))
+            elif self.loss == 'logistic':
+                self.L_i = np.log(1.0 + np.exp(-y_i*self.h))
+            elif self.loss == 'squared':
+                self.L_i = (y_i - self.h)**2
             else:
                 print('Cannot compute loss: unknown loss and/or activation function')
                 import sys; sys.exit()
@@ -108,6 +113,10 @@ class Neuron:
                     self.delta_ho = -np.exp(-y_hat_i)/(1.0 + np.exp(-y_hat_i))
                 else:
                     self.delta_ho = np.exp(y_hat_i)/(1.0 + np.exp(y_hat_i))
+                    
+            elif self.loss == 'squared' and self.activation == 'linear':
+                
+                self.delta_ho = -2.0*(y_i - self.h)
             
             #store the value in the r-th layer object
             self.layer_r.delta_ho[self.j] = self.delta_ho

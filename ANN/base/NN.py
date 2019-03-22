@@ -27,7 +27,7 @@ class ANN:
         self.n_layers = 2
 
         #number of neurons in a hidden layer
-        self.n_neurons_hid = 128
+        self.n_neurons_hid = 100
 
         #number of output neurons
         self.n_out = 1
@@ -35,7 +35,8 @@ class ANN:
         #loss function type
         #self.loss = 'perceptron_crit'
         #self.loss = 'hinge'
-        self.loss = 'logistic'
+        #self.loss = 'logistic'
+        self.loss = 'squared'
 
         self.loss_vals = []
 
@@ -46,7 +47,7 @@ class ANN:
         
         #add the hidden layers
         for r in range(1, self.n_layers):
-            self.layers.append(Layer(self.n_neurons_hid, r, self.n_layers, 'relu', self.loss))
+            self.layers.append(Layer(self.n_neurons_hid, r, self.n_layers, 'tanh', self.loss))
         
         #add the output layer
         self.layers.append(Layer(self.n_out, self.n_layers, self.n_layers, 'linear', self.loss))
@@ -113,7 +114,7 @@ class ANN:
     #compare a random back propagation derivative with a finite-difference approximation
     def check_derivative(self, X_i, y_i, n_checks):
         
-        eps = 1e-12
+        eps = 1e-6
         print('==============================================')
         print('Performing derivative check of', n_checks, 'randomly selected neurons.')
         
@@ -126,16 +127,16 @@ class ANN:
 
             #select a random neuron which has a nonzero gradient            
             L_grad_W_old = 0.0
-            #while L_grad_W_old == 0.0:
+            while L_grad_W_old == 0.0:
 
-            #select a random neuron
-            layer_idx = np.random.randint(1, self.n_layers+1)
-            neuron_idx = np.random.randint(self.layers[layer_idx].n_neurons)
-            weight_idx = np.random.randint(self.layers[layer_idx-1].n_neurons)
+                #select a random neuron
+                layer_idx = np.random.randint(1, self.n_layers+1)
+                neuron_idx = np.random.randint(self.layers[layer_idx].n_neurons)
+                weight_idx = np.random.randint(self.layers[layer_idx-1].n_neurons)
              
-            #the unperturbed weight and gradient
-            w_old = self.layers[layer_idx].W[weight_idx, neuron_idx]
-            L_grad_W_old = self.layers[layer_idx].L_grad_W[weight_idx, neuron_idx]
+                #the unperturbed weight and gradient
+                w_old = self.layers[layer_idx].W[weight_idx, neuron_idx]
+                L_grad_W_old = self.layers[layer_idx].L_grad_W[weight_idx, neuron_idx]
             
             #perturb weight
             self.layers[layer_idx].W[weight_idx, neuron_idx] += eps
@@ -158,7 +159,7 @@ class ANN:
         print('==============================================')
       
     #compute the number of misclassifications
-    def compute_loss(self):
+    def compute_misclass(self):
         
         n_misclass = 0.0
         
