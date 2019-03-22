@@ -3,7 +3,7 @@ import numpy as np
 
 class Layer:
     
-    def __init__(self, n_neurons, r, n_layers, activation, loss, bias):
+    def __init__(self, n_neurons, r, n_layers, activation, loss, bias = False):
         
         self.n_neurons = n_neurons
         self.r = r
@@ -18,8 +18,8 @@ class Layer:
             self.n_bias = 0
         
         self.h = np.zeros(n_neurons + self.n_bias)
-        self.delta_ho = np.zeros(n_neurons + self.n_bias)
-        self.grad_Phi = np.zeros(n_neurons + self.n_bias)
+        self.delta_ho = np.zeros(n_neurons)
+        self.grad_Phi = np.zeros(n_neurons)
         
     #connect this layer to its neighbors
     def meet_the_neighbors(self, layer_rm1, layer_rp1):

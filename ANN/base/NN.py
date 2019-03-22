@@ -50,7 +50,7 @@ class ANN:
         
         #add the hidden layers
         for r in range(1, self.n_layers):
-            self.layers.append(Layer(self.n_neurons_hid, r, self.n_layers, 'tanh', self.loss))
+            self.layers.append(Layer(self.n_neurons_hid, r, self.n_layers, 'tanh', self.loss, self.bias))
         
         #add the output layer
         self.layers.append(Layer(self.n_out, self.n_layers, self.n_layers, 'linear', self.loss))
@@ -67,11 +67,15 @@ class ANN:
             self.layers[i].meet_the_neighbors(self.layers[i-1], self.layers[i+1])
     
     #run the network forward
-    def feed_forward(self, X):
+    def feed_forward(self, X_i):
                
         #set the features at the output of in the input layer
-        self.layers[0].h = X
-        
+        if self.bias == False:
+            self.layers[0].h = X_i
+        else:
+            self.layers[0].h = np.ones(self.n_in + 1)
+            self.layers[0].h[0:self.n_in] = X_i
+                    
         for i in range(1, self.n_layers+1):
             self.layers[i].compute_output()
             

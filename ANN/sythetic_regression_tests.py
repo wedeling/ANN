@@ -17,7 +17,7 @@ plt.close('all')
 N = 100
 
 #get the data
-X, y = tf.get_lin_regres(N)
+X, y = tf.get_quad_regres(N)
 
 ##standardize the features and the data
 #try:
@@ -55,7 +55,7 @@ for i in range(N):
 #train the ANN
 ##############
 
-ann.train(500, store_loss=True, check_derivative=False)
+ann.train(1500, store_loss=True, check_derivative=False)
 
 if len(ann.loss_vals) > 0:
     fig_loss = plt.figure()
@@ -79,7 +79,7 @@ for i in range(N):
 ax = fig.add_subplot(224, title='validation')
 
 #get the labels
-X_val, y_val = tf.get_lin_regres(N)
+X_val, y_val = tf.get_quad_regres(N)
 
 #try:
 #    for i in range(N_feat):
