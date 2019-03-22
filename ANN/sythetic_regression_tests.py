@@ -14,22 +14,22 @@ plt.close('all')
 ###################################
 
 #number of data points
-N = 1000
+N = 100
 
 #get the data
-X, y = tf.get_sin_regres(N)
+X, y = tf.get_lin_regres(N)
 
-#standardize the features and the data
-try:
-    N_feat = X.shape[1]
-    for i in range(N_feat):
-        X[:,i] = (X[:,i] - np.mean(X[:,i]))/np.std(X[:,i])
-
-except IndexError:
-    N_feat = 1
-    X = (X - np.mean(X))/np.std(X) 
-    
-y = (y - np.mean(y))/np.std(y)
+##standardize the features and the data
+#try:
+#    N_feat = X.shape[1]
+#    for i in range(N_feat):
+#        X[:,i] = (X[:,i] - np.mean(X[:,i]))/np.std(X[:,i])
+#
+#except IndexError:
+#    N_feat = 1
+#    X = (X - np.mean(X))/np.std(X) 
+#    
+#y = (y - np.mean(y))/np.std(y)
 
 ##############
 #plot the data
@@ -55,7 +55,7 @@ for i in range(N):
 #train the ANN
 ##############
 
-ann.train(5000, store_loss=True, check_derivative=False)
+ann.train(500, store_loss=True, check_derivative=False)
 
 if len(ann.loss_vals) > 0:
     fig_loss = plt.figure()
@@ -79,15 +79,15 @@ for i in range(N):
 ax = fig.add_subplot(224, title='validation')
 
 #get the labels
-X_val, y_val = tf.get_sin_regres(N)
+X_val, y_val = tf.get_lin_regres(N)
 
-try:
-    for i in range(N_feat):
-        X_val[:,i] = (X_val[:,i] - np.mean(X_val[:,i]))/np.std(X_val[:,i])
-except IndexError:
-    X_val = (X_val - np.mean(X_val))/np.std(X_val) 
-
-y_val = (y_val - np.mean(y_val))/np.std(y_val)
+#try:
+#    for i in range(N_feat):
+#        X_val[:,i] = (X_val[:,i] - np.mean(X_val[:,i]))/np.std(X_val[:,i])
+#except IndexError:
+#    X_val = (X_val - np.mean(X_val))/np.std(X_val) 
+#
+#y_val = (y_val - np.mean(y_val))/np.std(y_val)
 
 for i in range(N):
     y_hat_val = ann.feed_forward(X_val[i])

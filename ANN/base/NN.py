@@ -27,10 +27,13 @@ class ANN:
         self.n_layers = 2
 
         #number of neurons in a hidden layer
-        self.n_neurons_hid = 100
+        self.n_neurons_hid = 10
 
         #number of output neurons
         self.n_out = 1
+        
+        #use bias neurons
+        self.bias = True
         
         #loss function type
         #self.loss = 'perceptron_crit'
@@ -43,7 +46,7 @@ class ANN:
         self.layers = []
         
         #add the input layer
-        self.layers.append(Layer(self.n_in, 0, self.n_layers, 'linear', self.loss)) 
+        self.layers.append(Layer(self.n_in, 0, self.n_layers, 'linear', self.loss, self.bias)) 
         
         #add the hidden layers
         for r in range(1, self.n_layers):

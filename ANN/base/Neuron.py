@@ -11,23 +11,27 @@ class Neuron:
         #the neuron index, its place in the layer
         self.j = j
 
-        #layer neighborhood
-        self.layer_rm1 = layer_rm1
-        self.layer_r = layer_r
-        self.layer_rp1 = layer_rp1
-        
-        #initialize the weights
-        self.layer_r.W[:, j] = np.random.randn(self.layer_rm1.n_neurons)*np.sqrt(1.0/layer_rm1.n_neurons)
-        
-        #pre-activation value
-        self.a = 0.0        
-        
-        #post-activation value
-        self.h = 0.0
+        if self.activation != 'bias':
+            #layer neighborhood
+            self.layer_rm1 = layer_rm1
+            self.layer_r = layer_r
+            self.layer_rp1 = layer_rp1
+            
+            #initialize the weights
+            self.layer_r.W[0:self.layer_rm1.n_neurons, j] = np.random.randn(self.layer_rm1.n_neurons)*np.sqrt(1.0/layer_rm1.n_neurons)
+            
+            #pre-activation value
+            self.a = 0.0        
+            
+            #post-activation value
+            self.h = 0.0
         
     #Compute the value of h, i.e. the post activation value of the neuron
     #Also update the value in layer_rp1 using its set_h subroutine
     def compute_h(self):
+        
+        if self.activation == 'bias':
+            return 1.0
         
         w = self.layer_r.W[:, self.j]
         
