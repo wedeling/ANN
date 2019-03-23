@@ -86,10 +86,10 @@ def get_quad_regres(N):
 
 def get_sin_regres(N):
 
-    a = 0.0; b = 2.0*np.pi
+    a = 0.0; b = 3.0*np.pi
     X = np.random.rand(N)*(b-a) + a
     noise = np.random.randn(N)*1e-2
-    y = np.sin(X) + noise
+    y = np.sin(2*X) + noise
     
     return X, y
 

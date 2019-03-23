@@ -17,19 +17,19 @@ plt.close('all')
 N = 100
 
 #get the data
-X, y = tf.get_quad_regres(N)
+X, y = tf.get_sin_regres(N)
 
-##standardize the features and the data
-#try:
-#    N_feat = X.shape[1]
-#    for i in range(N_feat):
-#        X[:,i] = (X[:,i] - np.mean(X[:,i]))/np.std(X[:,i])
-#
-#except IndexError:
-#    N_feat = 1
-#    X = (X - np.mean(X))/np.std(X) 
-#    
-#y = (y - np.mean(y))/np.std(y)
+#standardize the features and the data
+try:
+    N_feat = X.shape[1]
+    for i in range(N_feat):
+        X[:,i] = (X[:,i] - np.mean(X[:,i]))/np.std(X[:,i])
+
+except IndexError:
+    N_feat = 1
+    X = (X - np.mean(X))/np.std(X) 
+    
+y = (y - np.mean(y))/np.std(y)
 
 ##############
 #plot the data
@@ -38,7 +38,7 @@ fig = plt.figure()
 ax = fig.add_subplot(221, title='data')
 ax.plot(X, y, 'b+')
 
-ann = NN.ANN(X, y, alpha = 0.1)
+ann = NN.ANN(X, y, alpha = 0.01)
 
 ########################################
 #plot the ANN regression before training
@@ -55,11 +55,12 @@ for i in range(N):
 #train the ANN
 ##############
 
-ann.train(1500, store_loss=True, check_derivative=False)
+ann.train(500000, store_loss=True, check_derivative=False)
 
 if len(ann.loss_vals) > 0:
     fig_loss = plt.figure()
-    plt.plot(ann.loss_vals)
+    plt.yscale('log')
+    plt.plot(ann.mean_loss_vals)
 
 #######################################
 #plot the ANN regression after training
@@ -79,15 +80,15 @@ for i in range(N):
 ax = fig.add_subplot(224, title='validation')
 
 #get the labels
-X_val, y_val = tf.get_quad_regres(N)
+X_val, y_val = tf.get_sin_regres(N)
 
-#try:
-#    for i in range(N_feat):
-#        X_val[:,i] = (X_val[:,i] - np.mean(X_val[:,i]))/np.std(X_val[:,i])
-#except IndexError:
-#    X_val = (X_val - np.mean(X_val))/np.std(X_val) 
-#
-#y_val = (y_val - np.mean(y_val))/np.std(y_val)
+try:
+    for i in range(N_feat):
+        X_val[:,i] = (X_val[:,i] - np.mean(X_val[:,i]))/np.std(X_val[:,i])
+except IndexError:
+    X_val = (X_val - np.mean(X_val))/np.std(X_val) 
+
+y_val = (y_val - np.mean(y_val))/np.std(y_val)
 
 for i in range(N):
     y_hat_val = ann.feed_forward(X_val[i])

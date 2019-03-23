@@ -48,7 +48,7 @@ for i in range(N):
 ##############
 
 ann.compute_misclass()
-ann.train(5000, store_loss=True, check_derivative=True)
+ann.train(50000, store_loss=True, check_derivative=False)
 ann.compute_misclass()
 
 ############################################

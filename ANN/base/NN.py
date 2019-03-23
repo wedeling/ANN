@@ -42,6 +42,7 @@ class ANN:
         self.loss = 'squared'
 
         self.loss_vals = []
+        self.mean_loss_vals = []
 
         self.layers = []
         
@@ -116,7 +117,8 @@ class ANN:
                 self.loss_vals.append(l)
                 
                 if np.mod(i, 1000) == 0:
-                    print(np.mean(self.loss_vals))
+                    self.mean_loss_vals.append(np.mean(self.loss_vals[-1000:]))
+                    print(self.mean_loss_vals[-1])
                     
     #compare a random back propagation derivative with a finite-difference approximation
     def check_derivative(self, X_i, y_i, n_checks):
