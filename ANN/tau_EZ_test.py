@@ -43,6 +43,14 @@ X[:, 5] = o_n_LF
 X[:, 6] = sprime_n_LF
 X[:, 7] = zprime_n_LF
 
+#standardize the features and the data
+try:
+    for i in range(N_feat):
+        X[:,i] = (X[:,i] - np.mean(X[:,i]))/np.std(X[:,i])
+
+except IndexError:
+    X = (X - np.mean(X))/np.std(X) 
+
 idx1 = np.where(y == 1.0)[0]
 idxm1 = np.where(y == -1.0)[0]
 
@@ -52,9 +60,14 @@ ann = NN.ANN(X, y, alpha = 0.05)
 #train the ANN
 ##############
 
-ann.compute_loss()
-ann.train(20000, store_loss = True)
-ann.compute_loss()
+ann.compute_misclass()
+ann.train(500000, store_loss = True)
+ann.compute_misclass()
+
+if len(ann.loss_vals) > 0:
+    fig_loss = plt.figure()
+    plt.yscale('log')
+    plt.plot(ann.mean_loss_vals)
 
 if N_feat == 2:
     fig = plt.figure()
@@ -62,6 +75,5 @@ if N_feat == 2:
     
     ax.plot(X[idx1, 0], X[idx1, 1], 'b+')
     ax.plot(X[idxm1, 0], X[idxm1, 1], 'ro')
-
 
 plt.show()
