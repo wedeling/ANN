@@ -3,7 +3,8 @@ from .Layer import Layer
 
 class ANN:
 
-    def __init__(self, X, y, alpha = 1.0):
+    def __init__(self, X, y, alpha = 0.1, loss = 'squared', activation = 'tanh', 
+                 n_layers = 2, n_neurons = 10, bias = True):
 
         #the features
         self.X = X
@@ -24,22 +25,22 @@ class ANN:
             self.n_in = 1
         
         #number of layers (hidden + output)
-        self.n_layers = 3
+        self.n_layers = n_layers
 
         #number of neurons in a hidden layer
-        self.n_neurons_hid = 5
+        self.n_neurons = n_neurons
 
         #number of output neurons
         self.n_out = 1
         
         #use bias neurons
-        self.bias = True
+        self.bias = bias
         
         #loss function type
-        #self.loss = 'perceptron_crit'
-        #self.loss = 'hinge'
-        #self.loss = 'logistic'
-        self.loss = 'squared'
+        self.loss = loss
+        
+        #activation function of the hidden layers
+        self.activation = activation
 
         self.loss_vals = []
         self.mean_loss_vals = []
@@ -51,7 +52,7 @@ class ANN:
         
         #add the hidden layers
         for r in range(1, self.n_layers):
-            self.layers.append(Layer(self.n_neurons_hid, r, self.n_layers, 'tanh', self.loss, self.bias))
+            self.layers.append(Layer(self.n_neurons, r, self.n_layers, self.activation, self.loss, self.bias))
         
         #add the output layer
         self.layers.append(Layer(self.n_out, self.n_layers, self.n_layers, 'linear', self.loss))
