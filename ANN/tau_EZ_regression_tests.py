@@ -14,7 +14,7 @@ plt.close('all')
 ###################################
 
 #number of data points
-n_days = 365
+n_days = 100
 
 #get the data
 X, y, t = tf.get_tau_EZ_regres(n_days)
@@ -33,14 +33,25 @@ except IndexError:
     
 y = (y - np.mean(y))/np.std(y)
 
+#split the data into a training and a validation data set, if required
+
+#fraction of the data to be used for training
+beta = 0.5
+I = np.int(beta*y.size)
+
+X_train = X[0:I,:]
+y_train = y[0:I]
+
 ##############
 #plot the data
 ##############
 fig = plt.figure()
 ax = fig.add_subplot(131, title='data')
-ax.plot(t, y, 'b+')
+ax.plot(t[0:I], y[0:I], 'b+')
+ax.plot(t[I:], y[I:], 'r+')
 
-ann = NN.ANN(X, y, alpha = 0.01)
+
+ann = NN.ANN(X_train, y_train, alpha = 0.01)
 
 ########################################
 #plot the ANN regression before training
@@ -48,16 +59,19 @@ ann = NN.ANN(X, y, alpha = 0.01)
 
 ax = fig.add_subplot(132, title='before training')
 
+y_hat = np.zeros(N)
+
 for i in range(N):
-    y_hat = np.sign(ann.feed_forward(X[i]))
+    y_hat[i] = ann.feed_forward(X[i])
     
-    ax.plot(t[i], y_hat, 'b+')
+ax.plot(t[0:I], y_hat[0:I], 'b+')
+ax.plot(t[I:], y_hat[I:], 'r+')
 
 ##############
 #train the ANN
 ##############
 
-ann.train(50000, store_loss=True, check_derivative=False)
+ann.train(500000, store_loss=True, check_derivative=False)
 
 if len(ann.loss_vals) > 0:
     fig_loss = plt.figure()
@@ -70,10 +84,13 @@ if len(ann.loss_vals) > 0:
 
 ax = fig.add_subplot(133, title='after training')
 
+y_hat = np.zeros(N)
+
 for i in range(N):
-    y_hat = ann.feed_forward(X[i])
+    y_hat[i] = ann.feed_forward(X[i])
     
-    ax.plot(t[i], y_hat, 'b+')
+ax.plot(t[0:I], y_hat[0:I], 'b+')
+ax.plot(t[I:], y_hat[I:], 'r+')
 
 plt.tight_layout()
 

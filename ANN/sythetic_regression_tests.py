@@ -40,7 +40,6 @@ ax.plot(X, y, 'b+')
 
 ann = NN.ANN(X, y, alpha = 0.01)
 
-"""
 ########################################
 #plot the ANN regression before training
 ########################################
@@ -97,5 +96,5 @@ for i in range(N):
     ax.plot(X_val[i], y_hat_val, 'b+')
 
 plt.tight_layout()
-"""
+
 plt.show()

@@ -24,10 +24,10 @@ class ANN:
             self.n_in = 1
         
         #number of layers (hidden + output)
-        self.n_layers = 2
+        self.n_layers = 3
 
         #number of neurons in a hidden layer
-        self.n_neurons_hid = 10
+        self.n_neurons_hid = 5
 
         #number of output neurons
         self.n_out = 1
