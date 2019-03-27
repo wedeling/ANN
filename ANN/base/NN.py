@@ -3,8 +3,8 @@ from .Layer import Layer
 
 class ANN:
 
-    def __init__(self, X, y, alpha = 0.1, loss = 'squared', activation = 'tanh', 
-                 n_layers = 2, n_neurons = 10, bias = True, decay=False):
+    def __init__(self, X, y, alpha = 0.1, decay_rate = 1.0, loss = 'squared', \
+                 activation = 'tanh', n_layers = 2, n_neurons = 10, bias = True):
 
         #the features
         self.X = X
@@ -38,10 +38,10 @@ class ANN:
         
         #loss function type
         self.loss = loss
-        
-        #use learning rate decay
-        self.decay = decay
-        
+
+        #the rate of decay for alpha
+        self.decay_rate = decay_rate        
+
         #activation function of the hidden layers
         self.activation = activation
 
