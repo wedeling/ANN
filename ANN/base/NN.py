@@ -39,6 +39,9 @@ class ANN:
         #loss function type
         self.loss = loss
         
+        #use learning rate decay
+        self.decay = decay
+        
         #activation function of the hidden layers
         self.activation = activation
 
