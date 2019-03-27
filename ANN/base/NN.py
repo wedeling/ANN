@@ -4,7 +4,7 @@ from .Layer import Layer
 class ANN:
 
     def __init__(self, X, y, alpha = 0.1, loss = 'squared', activation = 'tanh', 
-                 n_layers = 2, n_neurons = 10, bias = True):
+                 n_layers = 2, n_neurons = 10, bias = True, decay=False):
 
         #the features
         self.X = X
