@@ -3,8 +3,9 @@ from .Layer import Layer
 
 class ANN:
 
-    def __init__(self, X, y, alpha = 0.1, decay_rate = 1.0, loss = 'squared', \
-                 activation = 'tanh', n_layers = 2, n_neurons = 10, bias = True):
+    def __init__(self, X, y, alpha = 0.1, decay_rate = 1.0, decay_step = 10**4, \
+                 loss = 'squared', activation = 'tanh', n_layers = 2, n_neurons = 10,\
+                 bias = True):
 
         #the features
         self.X = X
@@ -41,6 +42,7 @@ class ANN:
 
         #the rate of decay for alpha
         self.decay_rate = decay_rate        
+        self.decay_step = decay_step
 
         #activation function of the hidden layers
         self.activation = activation
@@ -93,14 +95,14 @@ class ANN:
             self.layers[i].back_prop(y_i)
         
     #update step of the weights
-    def epoch(self, X_i, y_i):
+    def epoch(self, X_i, y_i, alpha):
         
         self.feed_forward(X_i)
         self.back_prop(y_i)
         
         for i in range(1, self.n_layers+1):
             #gradient descent update step
-            self.layers[i].W = self.layers[i].W - self.alpha*self.layers[i].L_grad_W
+            self.layers[i].W = self.layers[i].W - alpha*self.layers[i].L_grad_W
     
     #train the neural network        
     def train(self, n_epoch, store_loss = False, check_derivative = False):
@@ -109,7 +111,11 @@ class ANN:
 
             #select a random training instance (X, y)
             rand_idx = np.random.randint(0, self.n_train)
-            self.epoch(self.X[rand_idx], self.y[rand_idx])
+            
+            #compute learning rate
+            alpha = self.alpha*self.decay_rate**(np.int(i/self.decay_step))
+
+            self.epoch(self.X[rand_idx], self.y[rand_idx], alpha)
             
             if check_derivative == True and np.mod(i, 1000) == 0:
                 self.check_derivative(self.X[rand_idx], self.y[rand_idx], 10)
@@ -122,7 +128,7 @@ class ANN:
                 
                 if np.mod(i, 1000) == 0:
                     self.mean_loss_vals.append(np.mean(self.loss_vals[-1000:]))
-                    print(self.mean_loss_vals[-1])
+                    print('Epoch', i, 'learning rate', alpha ,'loss:', self.mean_loss_vals[-1])
                     
     #compare a random back propagation derivative with a finite-difference approximation
     def check_derivative(self, X_i, y_i, n_checks):
