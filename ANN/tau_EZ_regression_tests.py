@@ -51,7 +51,7 @@ ax.plot(t[0:I], y[0:I], 'b+')
 ax.plot(t[I:], y[I:], 'r+')
 
 
-ann = NN.ANN(X_train, y_train, alpha = 0.01, decay_rate = 0.9, n_layers=5)
+ann = NN.ANN(X_train, y_train, alpha = 0.01, decay_rate = 0.9, n_layers=5, activation='hard_tanh')
 
 ########################################
 #plot the ANN regression before training

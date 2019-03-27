@@ -45,6 +45,13 @@ class Neuron:
             self.h = np.max([0, a])
         elif self.activation == 'tanh':
             self.h = np.tanh(a)
+        elif self.activation == 'hard_tanh':
+            if a > -1.0 and a < 1.0:
+                self.h = a
+            elif a >= 1.0:
+                self.h = 1.0
+            else:
+                self.h = -1.0
         else:
             print('Unknown activation type')
             import sys; sys.exit()
@@ -65,6 +72,11 @@ class Neuron:
                 return 0.0
         elif self.activation == 'tanh':
             return 1.0 - self.h**2
+        elif self.activation == 'hard_tanh':
+            if self.a > -1.0 and self.a < 1.0:
+                return 1.0
+            else:
+                return 0.0
             
     #compute the value of the loss function
     def compute_loss(self, y_i):
