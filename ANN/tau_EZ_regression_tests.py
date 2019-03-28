@@ -14,7 +14,7 @@ plt.close('all')
 ###################################
 
 #number of data points
-n_days = 200
+n_days = 100
 
 #get the data
 X, y, t = tf.get_tau_EZ_regres(n_days)
@@ -36,7 +36,7 @@ y = (y - np.mean(y))/np.std(y)
 #split the data into a training and a validation data set, if required
 
 #fraction of the data to be used for training
-beta = 0.25
+beta = 0.75
 I = np.int(beta*y.size)
 
 X_train = X[0:I,:]
@@ -51,7 +51,7 @@ ax.plot(t[0:I], y[0:I], 'b+')
 ax.plot(t[I:], y[I:], 'r+')
 
 
-ann = NN.ANN(X_train, y_train, alpha = 0.01, decay_rate = 0.9, n_layers=5, activation='hard_tanh')
+ann = NN.ANN(X_train, y_train, alpha = 0.01, beta = 0.9, decay_rate = 0.9, n_layers = 4, activation = 'hard_tanh')
 
 ########################################
 #plot the ANN regression before training

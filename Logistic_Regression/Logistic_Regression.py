@@ -66,4 +66,4 @@ class Logistic_Regression:
             if store_loss == True:
                 self.loss.append(self.compute_loss())
         
-import numpy as np            
+import numpy as np

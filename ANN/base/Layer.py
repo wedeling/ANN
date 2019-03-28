@@ -43,9 +43,10 @@ class Layer:
     #initialize the neurons of this layer
     def seed_neurons(self):
 
-        #initialize the weight matrix
+        #initialize the weight, gradient and momentum matrix
         self.W = np.zeros([self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons])
         self.L_grad_W = np.zeros([self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons])
+        self.V = np.zeros([self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons])
 
         neurons = []
         

@@ -3,7 +3,7 @@ from .Layer import Layer
 
 class ANN:
 
-    def __init__(self, X, y, alpha = 0.1, decay_rate = 1.0, decay_step = 10**4, \
+    def __init__(self, X, y, alpha = 0.1, decay_rate = 1.0, decay_step = 10**4, beta = 0.0,\
                  loss = 'squared', activation = 'tanh', n_layers = 2, n_neurons = 10,\
                  bias = True):
 
@@ -15,9 +15,6 @@ class ANN:
         
         #the training outputs
         self.y = y
-        
-        #training rate
-        self.alpha = alpha
         
         #number of input nodes
         try:
@@ -40,12 +37,21 @@ class ANN:
         #loss function type
         self.loss = loss
 
-        #the rate of decay for alpha
+        #training rate
+        self.alpha = alpha
+
+        #the rate of decay abd decay step for alpha
         self.decay_rate = decay_rate        
         self.decay_step = decay_step
 
+        #momentum parameter
+        self.beta = beta
+
         #activation function of the hidden layers
         self.activation = activation
+        
+        self.test1 = []
+        self.test2 = []
 
         self.loss_vals = []
         self.mean_loss_vals = []
@@ -95,14 +101,21 @@ class ANN:
             self.layers[i].back_prop(y_i)
         
     #update step of the weights
-    def epoch(self, X_i, y_i, alpha):
+    def epoch(self, X_i, y_i, alpha, beta):
         
         self.feed_forward(X_i)
         self.back_prop(y_i)
         
         for i in range(1, self.n_layers+1):
+
+            #momentum 
+            self.layers[i].V = beta*self.layers[i].V + (1.0 - beta)*self.layers[i].L_grad_W
+            
             #gradient descent update step
-            self.layers[i].W = self.layers[i].W - alpha*self.layers[i].L_grad_W
+            self.layers[i].W = self.layers[i].W - alpha*self.layers[i].V
+            
+        self.test1.append(self.layers[1].V[2,0])
+        self.test2.append(self.layers[1].L_grad_W[2,0])
     
     #train the neural network        
     def train(self, n_epoch, store_loss = False, check_derivative = False):
@@ -115,7 +128,7 @@ class ANN:
             #compute learning rate
             alpha = self.alpha*self.decay_rate**(np.int(i/self.decay_step))
 
-            self.epoch(self.X[rand_idx], self.y[rand_idx], alpha)
+            self.epoch(self.X[rand_idx], self.y[rand_idx], alpha, self.beta)
             
             if check_derivative == True and np.mod(i, 1000) == 0:
                 self.check_derivative(self.X[rand_idx], self.y[rand_idx], 10)
