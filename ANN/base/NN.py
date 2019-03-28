@@ -49,9 +49,6 @@ class ANN:
 
         #activation function of the hidden layers
         self.activation = activation
-        
-        self.test1 = []
-        self.test2 = []
 
         self.loss_vals = []
         self.mean_loss_vals = []
@@ -113,9 +110,6 @@ class ANN:
             
             #gradient descent update step
             self.layers[i].W = self.layers[i].W - alpha*self.layers[i].V
-            
-        self.test1.append(self.layers[1].V[2,0])
-        self.test2.append(self.layers[1].L_grad_W[2,0])
     
     #train the neural network        
     def train(self, n_epoch, store_loss = False, check_derivative = False):
