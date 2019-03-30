@@ -87,7 +87,7 @@ class ANN:
             self.layers[0].h[0:self.n_in] = X_i
                     
         for i in range(1, self.n_layers+1):
-            self.layers[i].compute_output()
+            self.layers[i].compute_output_local()
             
         return self.layers[-1].h
     

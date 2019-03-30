@@ -53,15 +53,43 @@ class Layer:
         for j in range(self.n_neurons):
             neurons.append(Neuron(self.activation, self.loss, self.layer_rm1, self, self.layer_rp1, j))
             
-        for j in range(self.n_bias):
+        for j in range(self.n_neurons, self.n_neurons + self.n_bias):
             neurons.append(Neuron('bias', self.loss, self.layer_rm1, self, self.layer_rp1, j))
             
         self.neurons = neurons
         
-    #return the output of the current layer
-    def compute_output(self):
+    #return the output of the current layer, computed locally at each neuron
+    def compute_output_local(self):
         for i in range(self.n_neurons + self.n_bias):
             self.h[i] = self.neurons[i].compute_h()
+
+    #compute the output of the current layer in one shot using matrix - vector/matrix multiplication    
+    def compute_output(self):
+        
+        a = np.dot(self.W.T, self.layer_rm1.h)
+       
+        #apply activation to a
+        if self.activation == 'linear':
+            self.h = a
+        elif self.activation == 'relu':
+            self.h = np.max([np.zeros(a.size), a], axis=0)
+        elif self.activation == 'tanh':
+            self.h = np.tanh(a)
+        elif self.activation == 'hard_tanh':
+            
+            aa = np.copy(a)
+            idx_gt1 = np.where(a >= 1.0)[0]
+            idx_ltm1 = np.where(a <= -1.0)[0]
+            aa[idx_gt1] = 1.0
+            aa[idx_ltm1] = -1.0
+            
+            self.h = aa
+
+        else:
+            print('Unknown activation type')
+            import sys; sys.exit()
+        
+        self.a = a
     
     #perform the backpropogation operations of the current layer
     def back_prop(self, y_i):

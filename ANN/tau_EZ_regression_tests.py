@@ -14,7 +14,7 @@ plt.close('all')
 ###################################
 
 #number of data points
-n_days = 365*8
+n_days = 50
 
 #get the data
 X, y, t = tf.get_tau_EZ_regres(n_days)
@@ -36,7 +36,7 @@ y = (y - np.mean(y))/np.std(y)
 #split the data into a training and a validation data set, if required
 
 #fraction of the data to be used for training
-beta = 0.125
+beta = 1.0
 I = np.int(beta*y.size)
 
 X_train = X[0:I,:]

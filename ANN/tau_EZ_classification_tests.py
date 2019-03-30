@@ -14,7 +14,7 @@ plt.close('all')
 ###################################
 
 #number of data points
-n_days = 50
+n_days = 365
 
 #get the data
 X, y, t = tf.get_tau_EZ_regres(n_days)
@@ -42,6 +42,16 @@ I = np.int(beta*y.size)
 X_train = X[0:I,:]
 y_train = np.sign(y[0:I])
 
+idx_1 = np.where(y_train == 1.0)[0]
+idx_m1 = np.where(y_train == -1.0)[0]
+
+#plot the training data
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.plot(X_train[idx_1, 0], X_train[idx_1, 1], 'bo')
+ax.plot(X_train[idx_m1, 0], X_train[idx_m1, 1], 'ro')
+plt.tight_layout()
+
 ann = NN.ANN(X_train, y_train, alpha = 0.01, beta = 0.9, loss = 'logistic', activation = 'relu',\
              decay_rate = 0.9, decay_step=10**5, n_layers = 4)
 
@@ -57,5 +67,6 @@ if len(ann.loss_vals) > 0:
     fig_loss = plt.figure()
     plt.yscale('log')
     plt.plot(ann.mean_loss_vals)
+    plt.tight_layout()
 
 plt.show()
