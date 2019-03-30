@@ -169,8 +169,10 @@ class Neuron:
     #compute the gradient of the loss function wrt the weights
     def compute_L_grad_W(self):
         
+        grad_Phi = self.layer_r.grad_Phi[self.j]
+        
         #The gradient of L wrt all weights of the incoming edges of this neuron
-        self.L_grad_W = self.delta_ho*self.grad_Phi*self.layer_rm1.h
+        self.L_grad_W = self.delta_ho*grad_Phi*self.layer_rm1.h
         
         #store the result in the Layer_r object
         self.layer_r.L_grad_W[:, self.j] = self.L_grad_W

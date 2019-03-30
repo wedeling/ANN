@@ -90,6 +90,22 @@ class Layer:
             import sys; sys.exit()
         
         self.a = a
+                
+    #compute the gradient in the activation function Phi wrt its input
+    def compute_grad_Phi(self):
+        
+        if self.activation == 'linear':
+            self.grad_Phi = np.ones(self.n_neurons)
+        elif self.activation == 'relu':
+            idx_lt0 = np.where(self.a < 0.0)[0]
+            self.grad_Phi = np.ones(self.n_neurons)
+            self.grad_Phi[idx_lt0] = 0.0
+        elif self.activation == 'tanh':
+            return 1.0 - self.h**2
+        elif self.activation == 'hard_tanh':
+            idx_1 = np.where(self.a > -1.0 and self.a < 1.0)[0]
+            self.grad_Phi = np.zeros(self.n_neurons)
+            self.grad_Phi[idx_1] = 1.0
     
     #perform the backpropogation operations of the current layer
     def back_prop(self, y_i):
