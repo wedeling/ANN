@@ -70,7 +70,7 @@ ann = NN.ANN(X_train, y_train, alpha = 0.01, beta = 0.9, decay_rate = 0.9, decay
 #train the ANN
 ##############
 
-ann.train(500000, store_loss=True, check_derivative=False)
+ann.train(50000, store_loss=True, check_derivative=False)
 
 if len(ann.loss_vals) > 0:
     fig_loss = plt.figure()
