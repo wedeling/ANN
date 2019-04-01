@@ -50,7 +50,8 @@ ax = fig.add_subplot(131, title='data')
 ax.plot(t[0:I], y[0:I], 'b+')
 ax.plot(t[I:], y[I:], 'r+')
 
-ann = NN.ANN(X_train, y_train, alpha = 0.01, beta = 0.9, decay_rate = 0.9, decay_step=10**5, n_layers = 4, activation = 'tanh')
+ann = NN.ANN(X_train, y_train, alpha = 0.01, beta = 0.9, decay_rate = 0.9,\
+             decay_step=10**5, n_layers = 4, activation = 'tanh')
 
 ########################################
 #plot the ANN regression before training
@@ -70,7 +71,11 @@ ann = NN.ANN(X_train, y_train, alpha = 0.01, beta = 0.9, decay_rate = 0.9, decay
 #train the ANN
 ##############
 
+import time
+t0 = time.time()
 ann.train(50000, store_loss=True, check_derivative=False)
+t1 = time.time()
+print(t1-t0) 
 
 if len(ann.loss_vals) > 0:
     fig_loss = plt.figure()

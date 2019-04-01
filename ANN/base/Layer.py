@@ -17,6 +17,7 @@ class Layer:
         else:
             self.n_bias = 0
         
+        self.a = np.zeros(n_neurons)
         self.h = np.zeros(n_neurons + self.n_bias)
         self.delta_ho = np.zeros(n_neurons)
         self.grad_Phi = np.zeros(n_neurons)
@@ -61,8 +62,12 @@ class Layer:
     #return the output of the current layer, computed locally at each neuron
     def compute_output_local(self):
         for i in range(self.n_neurons + self.n_bias):
-            self.h[i] = self.neurons[i].compute_h()
-
+#            self.h[i] = self.neurons[i].compute_h()
+            self.neurons[i].compute_h()
+       
+        #compute the gradient of the activation function, 
+        self.compute_grad_Phi()
+            
     #compute the output of the current layer in one shot using matrix - vector/matrix multiplication    
     def compute_output(self):
         
@@ -88,8 +93,14 @@ class Layer:
         else:
             print('Unknown activation type')
             import sys; sys.exit()
+            
+        if self.bias == True:
+            self.h = np.append(self.h, 1.0)
         
         self.a = a
+
+        #compute the gradient of the activation function, 
+        self.compute_grad_Phi()
                 
     #compute the gradient in the activation function Phi wrt its input
     def compute_grad_Phi(self):
@@ -101,7 +112,7 @@ class Layer:
             self.grad_Phi = np.ones(self.n_neurons)
             self.grad_Phi[idx_lt0] = 0.0
         elif self.activation == 'tanh':
-            return 1.0 - self.h**2
+            self.grad_Phi = 1.0 - self.h[0:self.n_neurons]**2
         elif self.activation == 'hard_tanh':
             idx_1 = np.where(self.a > -1.0 and self.a < 1.0)[0]
             self.grad_Phi = np.zeros(self.n_neurons)

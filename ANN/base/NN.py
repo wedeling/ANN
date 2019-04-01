@@ -5,7 +5,7 @@ class ANN:
 
     def __init__(self, X, y, alpha = 0.1, decay_rate = 1.0, decay_step = 10**4, beta = 0.0,\
                  loss = 'squared', activation = 'tanh', n_layers = 2, n_neurons = 10,\
-                 bias = True):
+                 bias = True, compute_h_at_neuron = False):
 
         #the features
         self.X = X
@@ -49,6 +49,10 @@ class ANN:
 
         #activation function of the hidden layers
         self.activation = activation
+        
+        #determines where to compute the neuron output 
+        #True: locally at the neuron, False: on the Layer level in one shot - is faster)
+        self.compute_h_at_neuron = compute_h_at_neuron
 
         self.loss_vals = []
         self.mean_loss_vals = []
@@ -87,10 +91,15 @@ class ANN:
             self.layers[0].h[0:self.n_in] = X_i
                     
         for i in range(1, self.n_layers+1):
-            self.layers[i].compute_output_local()
+            if self.compute_h_at_neuron:
+                #compute the output locally in each neuron
+                self.layers[i].compute_output_local()
+            else:
+                #compute the output on the layer lavel, using matric-vector multiplication for a 
+                self.layers[i].compute_output()
             
         return self.layers[-1].h
-    
+        
     def back_prop(self, y_i):
 
         #start back propagation over hidden layers, starting with layer before output layer

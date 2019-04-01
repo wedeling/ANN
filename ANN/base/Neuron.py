@@ -27,7 +27,7 @@ class Neuron:
             self.h = 0.0
         
     #Compute the value of h, i.e. the post activation value of the neuron
-    #Also update the value in layer_rp1 using its set_h subroutine
+    #NOTE: only used of compute_a_at_neuron flag at Layer is True
     def compute_h(self):
         
         if self.activation == 'bias':
@@ -40,63 +40,72 @@ class Neuron:
         
         #apply activation to a
         if self.activation == 'linear':
-            self.h = a
+            h = a
         elif self.activation == 'relu':
-            self.h = np.max([0, a])
+            h = np.max([0, a])
         elif self.activation == 'tanh':
-            self.h = np.tanh(a)
+            h = np.tanh(a)
         elif self.activation == 'hard_tanh':
             if a > -1.0 and a < 1.0:
-                self.h = a
+                h = a
             elif a >= 1.0:
-                self.h = 1.0
+                h = 1.0
             else:
-                self.h = -1.0
+                h = -1.0
         else:
             print('Unknown activation type')
             import sys; sys.exit()
         
-        self.a = a
+        self.layer_r.a[self.j] = a
+        self.layer_r.h[self.j] = h
 
-        return self.h
+        #return self.h
     
-    #compute the gradient in the activation function Phi wrt its input
-    def compute_grad_Phi(self):
-        
-        if self.activation == 'linear':
-            return 1.0
-        elif self.activation == 'relu':
-            if self.a >= 0.0:
-                return 1.0
-            else:
-                return 0.0
-        elif self.activation == 'tanh':
-            return 1.0 - self.h**2
-        elif self.activation == 'hard_tanh':
-            if self.a > -1.0 and self.a < 1.0:
-                return 1.0
-            else:
-                return 0.0
+#    #compute the gradient in the activation function Phi wrt its input
+#    def compute_grad_Phi(self):
+#        
+#        a = self.layer_r.a[self.j]
+#        h = self.layer_r.h[self.j]
+#        
+#        if self.activation == 'linear':
+#            return 1.0
+#        elif self.activation == 'relu':
+#            if a >= 0.0:
+#                return 1.0
+#            else:
+#                return 0.0
+#        elif self.activation == 'tanh':
+#            return 1.0 - h**2
+#        elif self.activation == 'hard_tanh':
+#            if a > -1.0 and a < 1.0:
+#                return 1.0
+#            else:
+#                return 0.0
             
     #compute the value of the loss function
     def compute_loss(self, y_i):
         
+        h = self.layer_r.h[self.j]
+        
         #only compute if in an output layer
         if self.layer_rp1 == None:
             if self.loss == 'perceptron_crit':
-                self.L_i = np.max([-y_i*self.h, 0.0])
+                self.L_i = np.max([-y_i*h, 0.0])
             elif self.loss == 'hinge':
-                self.L_i = np.max([1.0 - y_i*self.h, 0.0])
+                self.L_i = np.max([1.0 - y_i*h, 0.0])
             elif self.loss == 'logistic':
-                self.L_i = np.log(1.0 + np.exp(-y_i*self.h))
+                self.L_i = np.log(1.0 + np.exp(-y_i*h))
             elif self.loss == 'squared':
-                self.L_i = (y_i - self.h)**2
+                self.L_i = (y_i - h)**2
             else:
                 print('Cannot compute loss: unknown loss and/or activation function')
                 import sys; sys.exit()
     
     #initialize the value of delta_ho at the output layer
     def compute_delta_oo(self, y_i):
+        
+        h = self.layer_r.h[self.j]
+        
         #if the neuron is in the output layer, initialze delta_oo
         if self.layer_rp1 == None:
             
@@ -124,22 +133,17 @@ class Neuron:
                     
             elif self.loss == 'logistic' and self.activation == 'linear':
                 
-                y_hat_i = self.h
                 if y_i == 1.0: 
-                    self.delta_ho = -np.exp(-y_hat_i)/(1.0 + np.exp(-y_hat_i))
+                    self.delta_ho = -np.exp(-h)/(1.0 + np.exp(-h))
                 else:
-                    self.delta_ho = np.exp(y_hat_i)/(1.0 + np.exp(y_hat_i))
+                    self.delta_ho = np.exp(h)/(1.0 + np.exp(h))
                     
             elif self.loss == 'squared' and self.activation == 'linear':
                 
-                self.delta_ho = -2.0*(y_i - self.h)
+                self.delta_ho = -2.0*(y_i - h)
             
             #store the value in the r-th layer object
             self.layer_r.delta_ho[self.j] = self.delta_ho
-            
-            #compute the gradient of the activation function, and store in layer
-            self.grad_Phi = self.compute_grad_Phi()
-            self.layer_r.grad_Phi[self.j] = self.grad_Phi
             
         else:
             print('Can only initialize delta_oo in output layer')
@@ -160,11 +164,6 @@ class Neuron:
         
         #store the value
         self.layer_r.delta_ho[self.j] = self.delta_ho
-        
-        #compute the gradient of the activation function, 
-        #and store in this layer, to be used in the next backprop iteration
-        self.grad_Phi = self.compute_grad_Phi()
-        self.layer_r.grad_Phi[self.j] = self.grad_Phi
     
     #compute the gradient of the loss function wrt the weights
     def compute_L_grad_W(self):
