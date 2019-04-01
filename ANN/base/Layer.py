@@ -94,6 +94,7 @@ class Layer:
             print('Unknown activation type')
             import sys; sys.exit()
             
+        #add bias neuron output
         if self.bias == True:
             self.h = np.append(self.h, 1.0)
         
@@ -114,9 +115,21 @@ class Layer:
         elif self.activation == 'tanh':
             self.grad_Phi = 1.0 - self.h[0:self.n_neurons]**2
         elif self.activation == 'hard_tanh':
-            idx_1 = np.where(self.a > -1.0 and self.a < 1.0)[0]
+            idx_1 = np.where(np.logical_and(self.a > -1.0, self.a < 1.0))[0]
             self.grad_Phi = np.zeros(self.n_neurons)
             self.grad_Phi[idx_1] = 1.0
+            
+    def compute_delta_ho(self):
+        #get the delta_ho values of the next layer (layer r+1)
+        delta_h_rp1_o = self.layer_rp1.delta_ho
+        
+        #get the grad_Phi values of the next layer
+        grad_Phi_rp1 = self.layer_rp1.grad_Phi
+        
+        #the weight matrix of the next layer
+        W_rp1 = self.layer_rp1.W
+        
+        self.delta_ho = np.dot(W_rp1, delta_h_rp1_o*grad_Phi_rp1)[0:self.n_neurons]
     
     #perform the backpropogation operations of the current layer
     def back_prop(self, y_i):
@@ -127,6 +140,7 @@ class Layer:
                 self.neurons[i].compute_delta_oo(y_i)
                 self.neurons[i].compute_L_grad_W()
         else:
+            self.compute_delta_ho()
             for i in range(self.n_neurons):
-                self.neurons[i].compute_delta_ho()
+                #self.neurons[i].compute_delta_ho()
                 self.neurons[i].compute_L_grad_W()
