@@ -5,7 +5,7 @@ class ANN:
 
     def __init__(self, X, y, alpha = 0.1, decay_rate = 1.0, decay_step = 10**4, beta = 0.0,\
                  loss = 'squared', activation = 'tanh', n_layers = 2, n_neurons = 10,\
-                 bias = True, neuron_based_compute = False):
+                 bias = True, neuron_based_compute = False, batch_size = 1):
 
         #the features
         self.X = X
@@ -54,20 +54,26 @@ class ANN:
         #True: locally at the neuron, False: on the Layer level in one shot via linear algebra)
         self.neuron_based_compute = neuron_based_compute
 
+        #size of the mini batch used in stochastic gradient descent
+        self.batch_size = batch_size
+
         self.loss_vals = []
         self.mean_loss_vals = []
 
         self.layers = []
         
         #add the input layer
-        self.layers.append(Layer(self.n_in, 0, self.n_layers, 'linear', self.loss, self.bias)) 
+        self.layers.append(Layer(self.n_in, 0, self.n_layers, 'linear', \
+                                 self.loss, self.bias, batch_size = batch_size)) 
         
         #add the hidden layers
         for r in range(1, self.n_layers):
-            self.layers.append(Layer(self.n_neurons, r, self.n_layers, self.activation, self.loss, self.bias))
+            self.layers.append(Layer(self.n_neurons, r, self.n_layers, self.activation, \
+                                     self.loss, self.bias, batch_size=batch_size))
         
         #add the output layer
-        self.layers.append(Layer(self.n_out, self.n_layers, self.n_layers, 'linear', self.loss))
+        self.layers.append(Layer(self.n_out, self.n_layers, self.n_layers, \
+                                 'linear', self.loss, batch_size=batch_size))
         
         self.connect_layers()
    
@@ -81,14 +87,14 @@ class ANN:
             self.layers[i].meet_the_neighbors(self.layers[i-1], self.layers[i+1])
     
     #run the network forward
-    def feed_forward(self, X_i):
+    def feed_forward(self, X_i, batch_size = 1):
                
         #set the features at the output of in the input layer
         if self.bias == False:
             self.layers[0].h = X_i
         else:
-            self.layers[0].h = np.ones(self.n_in + 1)
-            self.layers[0].h[0:self.n_in] = X_i
+            self.layers[0].h = np.ones([self.n_in + 1, batch_size])
+            self.layers[0].h[0:self.n_in, :] = X_i.T
                     
         for i in range(1, self.n_layers+1):
             if self.neuron_based_compute:
@@ -96,7 +102,7 @@ class ANN:
                 self.layers[i].compute_output_local()
             else:
                 #compute the output on the layer lavel, using matric-vector multiplication for a 
-                self.layers[i].compute_output()
+                self.layers[i].compute_output(batch_size)
             
         return self.layers[-1].h
         
@@ -107,9 +113,9 @@ class ANN:
             self.layers[i].back_prop(y_i)
         
     #update step of the weights
-    def epoch(self, X_i, y_i, alpha, beta):
+    def batch(self, X_i, y_i, alpha, beta):
         
-        self.feed_forward(X_i)
+        self.feed_forward(X_i, self.batch_size)
         self.back_prop(y_i)
         
         for i in range(1, self.n_layers+1):
@@ -126,12 +132,13 @@ class ANN:
         for i in range(n_epoch):
 
             #select a random training instance (X, y)
-            rand_idx = np.random.randint(0, self.n_train)
+            rand_idx = np.random.randint(0, self.n_train, self.batch_size)
             
             #compute learning rate
             alpha = self.alpha*self.decay_rate**(np.int(i/self.decay_step))
 
-            self.epoch(self.X[rand_idx], self.y[rand_idx], alpha, self.beta)
+            #run the batch
+            self.batch(self.X[rand_idx], self.y[rand_idx], alpha, self.beta)
             
             if check_derivative == True and np.mod(i, 1000) == 0:
                 self.check_derivative(self.X[rand_idx], self.y[rand_idx], 10)
@@ -139,12 +146,15 @@ class ANN:
             if store_loss == True:
                 l = 0.0
                 for k in range(self.n_out):
-                    l += self.layers[-1].neurons[k].L_i
+                    if self.neuron_based_compute:
+                        l += self.layers[-1].neurons[k].L_i
+                    else:
+                        l += self.layers[-1].L_i
                 self.loss_vals.append(l)
                 
                 if np.mod(i, 1000) == 0:
                     self.mean_loss_vals.append(np.mean(self.loss_vals[-1000:]))
-                    print('Epoch', i, 'learning rate', alpha ,'loss:', self.mean_loss_vals[-1])
+                    print('Batch', i, 'learning rate', alpha ,'loss:', self.mean_loss_vals[-1])
                     
     #compare a random back propagation derivative with a finite-difference approximation
     def check_derivative(self, X_i, y_i, n_checks):

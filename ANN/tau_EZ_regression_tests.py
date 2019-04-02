@@ -14,7 +14,7 @@ plt.close('all')
 ###################################
 
 #number of data points
-n_days = 500
+n_days = 365
 
 #get the data
 X, y, t = tf.get_tau_EZ_regres(n_days)
@@ -50,9 +50,9 @@ ax = fig.add_subplot(131, title='data')
 ax.plot(t[0:I], y[0:I], 'b+')
 ax.plot(t[I:], y[I:], 'r+')
 
-ann = NN.ANN(X_train, y_train, alpha = 0.01, beta = 0.9, decay_rate = 0.9,\
-             decay_step=10**5, n_layers = 4, n_neurons=10, activation = 'tanh', \
-             neuron_based_compute=False)
+ann = NN.ANN(X_train, y_train, alpha = 0.001, beta = 0.9, decay_rate = 0.9, \
+             decay_step=10**5, n_layers = 8, n_neurons=10, activation = 'tanh', \
+             neuron_based_compute=False, batch_size=1)
 
 ########################################
 #plot the ANN regression before training
@@ -74,7 +74,7 @@ ann = NN.ANN(X_train, y_train, alpha = 0.01, beta = 0.9, decay_rate = 0.9,\
 
 import time
 t0 = time.time()
-ann.train(500000, store_loss=True, check_derivative=False)
+ann.train(50000, store_loss=True, check_derivative=False)
 t1 = time.time()
 print(t1-t0) 
 
@@ -92,7 +92,7 @@ ax = fig.add_subplot(133, title='after training')
 y_hat = np.zeros(N)
 
 for i in range(N):
-    y_hat[i] = ann.feed_forward(X[i])
+    y_hat[i] = ann.feed_forward(X[i].reshape([1,N_feat]))
     
 ax.plot(t[0:I], y_hat[0:I], 'b+')
 ax.plot(t[I:], y_hat[I:], 'r+')
