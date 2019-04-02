@@ -3,7 +3,7 @@ import numpy as np
 
 class Layer:
     
-    def __init__(self, n_neurons, r, n_layers, activation, loss, bias = False):
+    def __init__(self, n_neurons, r, n_layers, activation, loss, bias = False, neuron_based_compute = False):
         
         self.n_neurons = n_neurons
         self.r = r
@@ -11,6 +11,7 @@ class Layer:
         self.activation = activation
         self.loss = loss
         self.bias = bias
+        self.neuron_based_compute = neuron_based_compute
         
         if self.bias == True:
             self.n_bias = 1
@@ -119,6 +120,7 @@ class Layer:
             self.grad_Phi = np.zeros(self.n_neurons)
             self.grad_Phi[idx_1] = 1.0
             
+    #compute the gradient of the loss function wrt the activation functions of this layer
     def compute_delta_ho(self):
         #get the delta_ho values of the next layer (layer r+1)
         delta_h_rp1_o = self.layer_rp1.delta_ho
@@ -130,6 +132,12 @@ class Layer:
         W_rp1 = self.layer_rp1.W
         
         self.delta_ho = np.dot(W_rp1, delta_h_rp1_o*grad_Phi_rp1)[0:self.n_neurons]
+
+    #compute the gradient of the loss function wrt the weights of this layer
+    def compute_L_grad_W(self):
+        h_rm1 = self.layer_rm1.h
+        delta_ho_grad_Phi = self.delta_ho*self.grad_Phi
+        self.L_grad_W = np.dot(h_rm1.reshape([h_rm1.size, 1]), delta_ho_grad_Phi.reshape([1, delta_ho_grad_Phi.size]))
     
     #perform the backpropogation operations of the current layer
     def back_prop(self, y_i):
@@ -140,7 +148,11 @@ class Layer:
                 self.neurons[i].compute_delta_oo(y_i)
                 self.neurons[i].compute_L_grad_W()
         else:
-            self.compute_delta_ho()
-            for i in range(self.n_neurons):
-                #self.neurons[i].compute_delta_ho()
-                self.neurons[i].compute_L_grad_W()
+            
+            if self.neuron_based_compute == False:
+                self.compute_delta_ho()
+                self.compute_L_grad_W()
+            else:
+                for i in range(self.n_neurons):
+                    self.neurons[i].compute_delta_ho()
+                    self.neurons[i].compute_L_grad_W()

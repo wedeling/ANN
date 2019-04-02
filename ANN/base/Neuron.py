@@ -149,6 +149,7 @@ class Neuron:
             print('Can only initialize delta_oo in output layer')
             import sys; sys.exit()
    
+    #compute the gradient of the loss function wrt the activation function of this neuron
     def compute_delta_ho(self):
         #get the delta_ho values of the next layer (layer r+1)
         delta_h_rp1_o = self.layer_rp1.delta_ho
@@ -165,7 +166,7 @@ class Neuron:
         #store the value
         self.layer_r.delta_ho[self.j] = self.delta_ho
     
-    #compute the gradient of the loss function wrt the weights
+    #compute the gradient of the loss function wrt the weights of this neuron
     def compute_L_grad_W(self):
         
         grad_Phi = self.layer_r.grad_Phi[self.j]
