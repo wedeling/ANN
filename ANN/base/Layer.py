@@ -85,10 +85,10 @@ class Layer:
         elif self.activation == 'hard_tanh':
             
             aa = np.copy(a)
-            idx_gt1 = np.where(a >= 1.0)[0]
-            idx_ltm1 = np.where(a <= -1.0)[0]
-            aa[idx_gt1] = 1.0
-            aa[idx_ltm1] = -1.0
+            idx_gt1 = np.where(a >= 1.0)
+            idx_ltm1 = np.where(a <= -1.0)
+            aa[idx_gt1[0], idx_gt1[1]] = 1.0
+            aa[idx_ltm1[0], idx_ltm1[1]] = -1.0
             
             self.h = aa
 
@@ -117,9 +117,9 @@ class Layer:
         elif self.activation == 'tanh':
             self.grad_Phi = 1.0 - self.h[0:self.n_neurons]**2
         elif self.activation == 'hard_tanh':
-            idx_1 = np.where(np.logical_and(self.a > -1.0, self.a < 1.0))[0]
-            self.grad_Phi = np.zeros(self.n_neurons)
-            self.grad_Phi[idx_1] = 1.0
+            idx = np.where(np.logical_and(self.a > -1.0, self.a < 1.0))
+            self.grad_Phi = np.zeros([self.n_neurons, self.batch_size])
+            self.grad_Phi[idx[0], idx[1]] = 1.0
 
     #compute the value of the loss function
     def compute_loss(self, y_i):
