@@ -130,6 +130,9 @@ class ANN:
             
             #gradient descent update step
             self.layers[i].W = self.layers[i].W - alpha*self.layers[i].V
+            
+            #Nesterove momentum
+            self.layers[i].W += -self.alpha*self.beta*self.layers[i].V
     
     #train the neural network        
     def train(self, n_epoch, store_loss = False, check_derivative = False):
