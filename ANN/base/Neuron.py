@@ -17,8 +17,8 @@ class Neuron:
             self.layer_r = layer_r
             self.layer_rp1 = layer_rp1
             
-            #initialize the weights
-            self.layer_r.W[0:self.layer_rm1.n_neurons, j] = np.random.randn(self.layer_rm1.n_neurons)*np.sqrt(1.0/layer_rm1.n_neurons)
+            #initialize the weights - done on Layer
+            #self.layer_r.W[0:self.layer_rm1.n_neurons, j] = np.random.randn(self.layer_rm1.n_neurons)*np.sqrt(1.0/layer_rm1.n_neurons)
             
             #pre-activation value
             self.a = 0.0        
@@ -36,7 +36,7 @@ class Neuron:
         w = self.layer_r.W[:, self.j]
         
         #multiply output of previous layer with the weights of this layer
-        a = np.dot(self.layer_rm1.h, w)
+        a = np.dot(self.layer_rm1.h.flatten(), w)
         
         #apply activation to a
         if self.activation == 'linear':
@@ -176,4 +176,4 @@ class Neuron:
         self.L_grad_W = delta_ho*grad_Phi*self.layer_rm1.h
         
         #store the result in the Layer_r object
-        self.layer_r.L_grad_W[:, self.j] = self.L_grad_W
+        self.layer_r.L_grad_W[:, self.j] = self.L_grad_W.flatten()

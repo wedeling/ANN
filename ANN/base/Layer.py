@@ -48,19 +48,21 @@ class Layer:
     def seed_neurons(self):
 
         #initialize the weight, gradient and momentum matrix
-        self.W = np.zeros([self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons])
+#        self.W = np.zeros([self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons])
+        self.W = np.random.randn(self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons)*np.sqrt(1.0/self.layer_rm1.n_neurons)
         self.L_grad_W = np.zeros([self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons])
         self.V = np.zeros([self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons])
 
-        neurons = []
-        
-        for j in range(self.n_neurons):
-            neurons.append(Neuron(self.activation, self.loss, self.layer_rm1, self, self.layer_rp1, j))
+        if self.neuron_based_compute == True:
+            neurons = []
             
-        for j in range(self.n_neurons, self.n_neurons + self.n_bias):
-            neurons.append(Neuron('bias', self.loss, self.layer_rm1, self, self.layer_rp1, j))
-            
-        self.neurons = neurons
+            for j in range(self.n_neurons):
+                neurons.append(Neuron(self.activation, self.loss, self.layer_rm1, self, self.layer_rp1, j))
+                
+            for j in range(self.n_neurons, self.n_neurons + self.n_bias):
+                neurons.append(Neuron('bias', self.loss, self.layer_rm1, self, self.layer_rp1, j))
+                
+            self.neurons = neurons
         
     #return the output of the current layer, computed locally at each neuron
     def compute_output_local(self):
@@ -153,13 +155,8 @@ class Layer:
             
             if self.loss == 'logistic' and self.activation == 'linear':
 
-                sgn = np.sign(y_i)
-                self.delta_ho = -sgn*np.exp(-sgn*h)/(1.0 + np.exp(-sgn*h))
-                
-#                if y_i == 1.0: 
-#                    self.delta_ho = -np.exp(-h)/(1.0 + np.exp(-h))
-#                else:
-#                    self.delta_ho = np.exp(h)/(1.0 + np.exp(h))
+                self.delta_ho = -y_i*np.exp(-y_i*h)/(1.0 + np.exp(-y_i*h))
+
             elif self.loss == 'squared' and self.activation == 'linear':
                 
                 self.delta_ho = -2.0*(y_i - h)

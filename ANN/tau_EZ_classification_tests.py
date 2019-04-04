@@ -69,4 +69,22 @@ if len(ann.loss_vals) > 0:
     plt.plot(ann.mean_loss_vals)
     plt.tight_layout()
 
+#######################
+#plot the predictions #
+#######################
+
+y_hat = np.zeros(N)
+for i in range(N):
+    y_hat[i] = np.sign(ann.feed_forward(X[i])[0][0])
+    
+idx_1 = np.where(y_hat == 1.0)[0]
+idx_m1 = np.where(y_hat == -1.0)[0]
+
+#plot the training data
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.plot(X_train[idx_1, 0], X_train[idx_1, 1], 'bo')
+ax.plot(X_train[idx_m1, 0], X_train[idx_m1, 1], 'ro')
+plt.tight_layout()
+
 plt.show()

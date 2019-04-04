@@ -64,16 +64,19 @@ class ANN:
         
         #add the input layer
         self.layers.append(Layer(self.n_in, 0, self.n_layers, 'linear', \
-                                 self.loss, self.bias, batch_size = batch_size)) 
+                                 self.loss, self.bias, batch_size = batch_size, \
+                                 neuron_based_compute=neuron_based_compute)) 
         
         #add the hidden layers
         for r in range(1, self.n_layers):
             self.layers.append(Layer(self.n_neurons, r, self.n_layers, self.activation, \
-                                     self.loss, self.bias, batch_size=batch_size))
+                                     self.loss, self.bias, batch_size=batch_size, \
+                                     neuron_based_compute=neuron_based_compute))
         
         #add the output layer
         self.layers.append(Layer(self.n_out, self.n_layers, self.n_layers, \
-                                 'linear', self.loss, batch_size=batch_size))
+                                 'linear', self.loss, batch_size=batch_size, \
+                                 neuron_based_compute = neuron_based_compute))
         
         self.connect_layers()
    
