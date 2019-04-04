@@ -79,7 +79,7 @@ class Layer:
         if self.activation == 'linear':
             self.h = a
         elif self.activation == 'relu':
-            self.h = np.max([np.zeros(a.size), a], axis=0)
+            self.h = np.maximum(np.zeros([a.shape[0], a.shape[1]]), a)
         elif self.activation == 'tanh':
             self.h = np.tanh(a)
         elif self.activation == 'hard_tanh':
@@ -111,9 +111,9 @@ class Layer:
         if self.activation == 'linear':
             self.grad_Phi = np.ones([self.n_neurons, self.batch_size])
         elif self.activation == 'relu':
-            idx_lt0 = np.where(self.a < 0.0)[0]
-            self.grad_Phi = np.ones(self.n_neurons)
-            self.grad_Phi[idx_lt0] = 0.0
+            idx_lt0 = np.where(self.a < 0.0)
+            self.grad_Phi = np.ones([self.n_neurons, self.batch_size])
+            self.grad_Phi[idx_lt0[0], idx_lt0[1]] = 0.0
         elif self.activation == 'tanh':
             self.grad_Phi = 1.0 - self.h[0:self.n_neurons]**2
         elif self.activation == 'hard_tanh':
@@ -152,11 +152,14 @@ class Layer:
             h = self.h
             
             if self.loss == 'logistic' and self.activation == 'linear':
+
+                sgn = np.sign(y_i)
+                self.delta_ho = -sgn*np.exp(-sgn*h)/(1.0 + np.exp(-sgn*h))
                 
-                if y_i == 1.0: 
-                    self.delta_ho = -np.exp(-h)/(1.0 + np.exp(-h))
-                else:
-                    self.delta_ho = np.exp(h)/(1.0 + np.exp(h))
+#                if y_i == 1.0: 
+#                    self.delta_ho = -np.exp(-h)/(1.0 + np.exp(-h))
+#                else:
+#                    self.delta_ho = np.exp(h)/(1.0 + np.exp(h))
             elif self.loss == 'squared' and self.activation == 'linear':
                 
                 self.delta_ho = -2.0*(y_i - h)

@@ -52,15 +52,15 @@ ax.plot(X_train[idx_1, 0], X_train[idx_1, 1], 'bo')
 ax.plot(X_train[idx_m1, 0], X_train[idx_m1, 1], 'ro')
 plt.tight_layout()
 
-ann = NN.ANN(X_train, y_train, alpha = 0.01, beta = 0.9, loss = 'logistic', activation = 'relu',\
-             decay_rate = 0.9, decay_step=10**5, n_layers = 4)
+ann = NN.ANN(X_train, y_train, alpha = 0.001, beta = 0.9, loss = 'logistic', activation = 'relu',\
+             decay_rate = 0.9, decay_step=10**5, n_layers = 4, n_neurons=10, batch_size=64)
 
 ##############
 #train the ANN
 ##############
 
 ann.compute_misclass()
-ann.train(700000, store_loss=True, check_derivative=False)
+ann.train(1000000, store_loss=True, check_derivative=False)
 ann.compute_misclass()
 
 if len(ann.loss_vals) > 0:

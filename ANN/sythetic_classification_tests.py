@@ -14,7 +14,7 @@ plt.close('all')
 #######################################
 
 #number of data points
-N = 1000
+N = 5000
 
 #get the labels
 X, y, idx1, idxm1 = tf.get_y_quadrant(N)
@@ -27,7 +27,8 @@ ax = fig.add_subplot(221, title='data')
 ax.plot(X[idx1, 0], X[idx1, 1], 'b+')
 ax.plot(X[idxm1, 0], X[idxm1, 1], 'r*')
 
-ann = NN.ANN(X, y, alpha = 0.1)
+ann = NN.ANN(X, y, alpha = 0.01, n_layers=4, n_neurons=10, activation='relu', loss='logistic', \
+             beta=0.9, decay_rate=0.9, decay_step=10**4, batch_size=32)
 
 #############################################
 #plot the ANN classifications before training
@@ -48,7 +49,7 @@ for i in range(N):
 ##############
 
 ann.compute_misclass()
-ann.train(50000, store_loss=True, check_derivative=False)
+ann.train(100000, store_loss=True, check_derivative=False)
 ann.compute_misclass()
 
 ############################################

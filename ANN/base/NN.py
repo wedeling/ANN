@@ -88,6 +88,8 @@ class ANN:
     
     #run the network forward
     def feed_forward(self, X_i, batch_size = 1):
+        
+        X_i = X_i.reshape([batch_size, self.n_in])
                
         #set the features at the output of in the input layer
         if self.bias == False:
