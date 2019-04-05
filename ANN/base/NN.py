@@ -3,8 +3,8 @@ from .Layer import Layer
 
 class ANN:
 
-    def __init__(self, X, y, alpha = 0.001, decay_rate = 1.0, decay_step = 10**4, beta1 = 0.9, beta2 = 0.999, \
-                 param_specific_learn_rate = False, loss = 'squared', activation = 'tanh', n_layers = 2, n_neurons = 10, \
+    def __init__(self, X, y, alpha = 0.001, decay_rate = 1.0, decay_step = 10**4, beta1 = 0.9, beta2 = 0.999, lamb = 0.0, \
+                 param_specific_learn_rate = False, loss = 'squared', activation = 'tanh', n_layers = 2, n_neurons = 16, \
                  bias = True, neuron_based_compute = False, batch_size = 1):
 
         #the features
@@ -49,6 +49,9 @@ class ANN:
         
         #squared gradient parameter
         self.beta2 = beta2
+        
+        #penalty parameter
+        self.lamb = lamb
         
         #use parameter specific learning rate
         self.param_specific_learn_rate = param_specific_learn_rate
@@ -131,6 +134,8 @@ class ANN:
         
         for i in range(1, self.n_layers+1):
 
+            #NOTE: I use self.layers[i] a LOT, make local variable?? does that work??
+            
             #momentum 
             self.layers[i].V = beta1*self.layers[i].V + (1.0 - beta1)*self.layers[i].L_grad_W
             
@@ -139,7 +144,9 @@ class ANN:
             
             #gradient descent update step
             if self.param_specific_learn_rate == False:
-                self.layers[i].W = self.layers[i].W - alpha*self.layers[i].V    #same alpha for all weights
+                Lamb = self.lamb*np.ones([self.layers[i].W.shape[0], self.layers[i].W.shape[1]])
+                Lamb[-1, :] = 0.0
+                self.layers[i].W = (1.0 - alpha*Lamb)*self.layers[i].W - alpha*self.layers[i].V    #same alpha for all weights
             else:
                 #RMSProp
                 alpha_scaled = alpha/(np.sqrt(self.layers[i].A + + 1e-8))
