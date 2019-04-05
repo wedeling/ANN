@@ -52,8 +52,9 @@ ax.plot(X_train[idx_1, 0], X_train[idx_1, 1], 'bo')
 ax.plot(X_train[idx_m1, 0], X_train[idx_m1, 1], 'ro')
 plt.tight_layout()
 
-ann = NN.ANN(X_train, y_train, alpha = 0.001, beta = 0.9, loss = 'logistic', activation = 'relu',\
-             decay_rate = 0.9, decay_step=10**5, n_layers = 4, n_neurons=10, batch_size=64)
+ann = NN.ANN(X_train, y_train, alpha = 0.001, beta1 = 0.9, beta2=0.999, loss = 'logistic', activation = 'relu',\
+             decay_rate = 1.0, decay_step=10**5, n_layers = 2, n_neurons=64, batch_size=32, \
+             param_specific_learn_rate=True)
 
 ##############
 #train the ANN

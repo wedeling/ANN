@@ -3,8 +3,8 @@ from .Layer import Layer
 
 class ANN:
 
-    def __init__(self, X, y, alpha = 0.1, decay_rate = 1.0, decay_step = 10**4, beta = 0.0,\
-                 loss = 'squared', activation = 'tanh', n_layers = 2, n_neurons = 10,\
+    def __init__(self, X, y, alpha = 0.001, decay_rate = 1.0, decay_step = 10**4, beta1 = 0.9, beta2 = 0.999, \
+                 param_specific_learn_rate = False, loss = 'squared', activation = 'tanh', n_layers = 2, n_neurons = 10, \
                  bias = True, neuron_based_compute = False, batch_size = 1):
 
         #the features
@@ -45,7 +45,13 @@ class ANN:
         self.decay_step = decay_step
 
         #momentum parameter
-        self.beta = beta
+        self.beta1 = beta1
+        
+        #squared gradient parameter
+        self.beta2 = beta2
+        
+        #use parameter specific learning rate
+        self.param_specific_learn_rate = param_specific_learn_rate
 
         #activation function of the hidden layers
         self.activation = activation
@@ -118,7 +124,7 @@ class ANN:
             self.layers[i].back_prop(y_i)
         
     #update step of the weights
-    def batch(self, X_i, y_i, alpha, beta):
+    def batch(self, X_i, y_i, alpha, beta1, beta2, t):
         
         self.feed_forward(X_i, self.batch_size)
         self.back_prop(y_i)
@@ -126,13 +132,24 @@ class ANN:
         for i in range(1, self.n_layers+1):
 
             #momentum 
-            self.layers[i].V = beta*self.layers[i].V + (1.0 - beta)*self.layers[i].L_grad_W
+            self.layers[i].V = beta1*self.layers[i].V + (1.0 - beta1)*self.layers[i].L_grad_W
+            
+            #moving average of squared gradient magnitude
+            self.layers[i].A = beta2*self.layers[i].A + (1.0 - beta2)*self.layers[i].L_grad_W**2
             
             #gradient descent update step
-            self.layers[i].W = self.layers[i].W - alpha*self.layers[i].V
+            if self.param_specific_learn_rate == False:
+                self.layers[i].W = self.layers[i].W - alpha*self.layers[i].V    #same alpha for all weights
+            else:
+                #RMSProp
+                alpha_scaled = alpha/(np.sqrt(self.layers[i].A + + 1e-8))
+                #Adam
+                #alpha_t = alpha*np.sqrt(1.0 - beta2**t)/(1.0 - beta1**t)
+                #alpha_scaled = alpha_t/(np.sqrt(self.layers[i].A + + 1e-8))
+                self.layers[i].W = self.layers[i].W - alpha_scaled*self.layers[i].V
             
-            #Nesterove momentum
-            self.layers[i].W += -self.alpha*self.beta*self.layers[i].V
+            #Nesterov momentum
+            self.layers[i].W += -alpha*beta1*self.layers[i].V
     
     #train the neural network        
     def train(self, n_epoch, store_loss = False, check_derivative = False):
@@ -146,7 +163,7 @@ class ANN:
             alpha = self.alpha*self.decay_rate**(np.int(i/self.decay_step))
 
             #run the batch
-            self.batch(self.X[rand_idx], self.y[rand_idx], alpha, self.beta)
+            self.batch(self.X[rand_idx], self.y[rand_idx], alpha, self.beta1, self.beta2, i+1)
             
             if check_derivative == True and np.mod(i, 1000) == 0:
                 self.check_derivative(self.X[rand_idx], self.y[rand_idx], 10)

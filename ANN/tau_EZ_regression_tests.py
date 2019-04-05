@@ -14,7 +14,7 @@ plt.close('all')
 ###################################
 
 #number of data points
-n_days = 50
+n_days = 8*365
 
 #get the data
 X, y, t = tf.get_tau_EZ_regres(n_days)
@@ -50,9 +50,9 @@ ax = fig.add_subplot(131, title='data')
 ax.plot(t[0:I], y[0:I], 'b+')
 ax.plot(t[I:], y[I:], 'r+')
 
-ann = NN.ANN(X_train, y_train, alpha = 0.01, beta = 0.9, decay_rate = 0.9, \
-             decay_step=10**5, n_layers = 2, n_neurons=10, activation = 'hard_tanh', \
-             neuron_based_compute=True, batch_size=1)
+ann = NN.ANN(X_train, y_train, alpha = 0.001, beta1 = 0.9, beta2=0.999, decay_rate = 0.9, \
+             decay_step=10**5, n_layers = 4, n_neurons=128, activation = 'hard_tanh', \
+             neuron_based_compute=False, batch_size=32, param_specific_learn_rate=True)
 
 ########################################
 #plot the ANN regression before training
@@ -74,7 +74,7 @@ ann = NN.ANN(X_train, y_train, alpha = 0.01, beta = 0.9, decay_rate = 0.9, \
 
 import time
 t0 = time.time()
-ann.train(50000, store_loss=True, check_derivative=False)
+ann.train(1000000, store_loss=True, check_derivative=False)
 t1 = time.time()
 print(t1-t0) 
 

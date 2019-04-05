@@ -52,6 +52,7 @@ class Layer:
         self.W = np.random.randn(self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons)*np.sqrt(1.0/self.layer_rm1.n_neurons)
         self.L_grad_W = np.zeros([self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons])
         self.V = np.zeros([self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons])
+        self.A = np.zeros([self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons])
 
         if self.neuron_based_compute == True:
             neurons = []
