@@ -144,19 +144,20 @@ class ANN:
             
             #gradient descent update step
             if self.param_specific_learn_rate == False:
-                Lamb = self.lamb*np.ones([self.layers[i].W.shape[0], self.layers[i].W.shape[1]])
-                Lamb[-1, :] = 0.0
-                self.layers[i].W = (1.0 - alpha*Lamb)*self.layers[i].W - alpha*self.layers[i].V    #same alpha for all weights
+                #Lamb = self.lamb*np.ones([self.layers[i].W.shape[0], self.layers[i].W.shape[1]])
+                #Lamb[-1, :] = 0.0
+                #self.layers[i].W = (1.0 - alpha*Lamb)*self.layers[i].W - alpha*self.layers[i].V    #same alpha for all weights
+                self.layers[i].W = self.layers[i].W - alpha*self.layers[i].V    #same alpha for all weights
             else:
                 #RMSProp
-                alpha_scaled = alpha/(np.sqrt(self.layers[i].A + + 1e-8))
+                alpha_scaled = alpha/(np.sqrt(self.layers[i].A + 1e-8))
                 #Adam
                 #alpha_t = alpha*np.sqrt(1.0 - beta2**t)/(1.0 - beta1**t)
                 #alpha_scaled = alpha_t/(np.sqrt(self.layers[i].A + + 1e-8))
                 self.layers[i].W = self.layers[i].W - alpha_scaled*self.layers[i].V
             
             #Nesterov momentum
-            self.layers[i].W += -alpha*beta1*self.layers[i].V
+            #self.layers[i].W += -alpha*beta1*self.layers[i].V
     
     #train the neural network        
     def train(self, n_epoch, store_loss = False, check_derivative = False):

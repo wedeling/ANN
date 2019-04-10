@@ -27,8 +27,9 @@ ax = fig.add_subplot(221, title='data')
 ax.plot(X[idx1, 0], X[idx1, 1], 'b+')
 ax.plot(X[idxm1, 0], X[idxm1, 1], 'r*')
 
-ann = NN.ANN(X, y, alpha = 0.01, n_layers=4, n_neurons=10, activation='relu', loss='logistic', \
-             beta=0.9, decay_rate=0.9, decay_step=10**4, batch_size=32)
+ann = NN.ANN(X, y, alpha = 0.001, beta1 = 0.9, beta2=0.999, loss = 'logistic', activation = 'relu',\
+             decay_rate = 0.9, decay_step=10**5, n_layers = 4, n_neurons=16, batch_size=1, \
+             param_specific_learn_rate=True)
 
 #############################################
 #plot the ANN classifications before training
@@ -49,7 +50,7 @@ for i in range(N):
 ##############
 
 ann.compute_misclass()
-ann.train(100000, store_loss=True, check_derivative=False)
+ann.train(50000, store_loss=True, check_derivative=False)
 ann.compute_misclass()
 
 ############################################
