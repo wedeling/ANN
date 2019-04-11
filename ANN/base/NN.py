@@ -1,11 +1,12 @@
 import numpy as np
+import os, pickle
 from .Layer import Layer
 
 class ANN:
 
-    def __init__(self, X, y, alpha = 0.001, decay_rate = 1.0, decay_step = 10**4, beta1 = 0.9, beta2 = 0.999, lamb = 0.0, \
+    def __init__(self, X = np.zeros(1), y = np.zeros(0), alpha = 0.001, decay_rate = 1.0, decay_step = 10**4, beta1 = 0.9, beta2 = 0.999, lamb = 0.0, \
                  param_specific_learn_rate = False, loss = 'squared', activation = 'tanh', n_layers = 2, n_neurons = 16, \
-                 bias = True, neuron_based_compute = False, batch_size = 1):
+                 bias = True, neuron_based_compute = False, batch_size = 1, save = True, name='ANN'):
 
         #the features
         self.X = X
@@ -58,6 +59,10 @@ class ANN:
 
         #activation function of the hidden layers
         self.activation = activation
+        
+        #save the neural network after training
+        self.save = save
+        self.name = name
         
         #determines where to compute the neuron outputs and gradients 
         #True: locally at the neuron, False: on the Layer level in one shot via linear algebra)
@@ -132,32 +137,32 @@ class ANN:
         self.feed_forward(X_i, self.batch_size)
         self.back_prop(y_i)
         
-        for i in range(1, self.n_layers+1):
+        for r in range(1, self.n_layers+1):
 
-            #NOTE: I use self.layers[i] a LOT, make local variable?? does that work??
+            layer_r = self.layers[r]
             
             #momentum 
-            self.layers[i].V = beta1*self.layers[i].V + (1.0 - beta1)*self.layers[i].L_grad_W
+            layer_r.V = beta1*layer_r.V + (1.0 - beta1)*layer_r.L_grad_W
             
             #moving average of squared gradient magnitude
-            self.layers[i].A = beta2*self.layers[i].A + (1.0 - beta2)*self.layers[i].L_grad_W**2
+            layer_r.A = beta2*layer_r.A + (1.0 - beta2)*layer_r.L_grad_W**2
             
             #gradient descent update step
             if self.param_specific_learn_rate == False:
                 #Lamb = self.lamb*np.ones([self.layers[i].W.shape[0], self.layers[i].W.shape[1]])
                 #Lamb[-1, :] = 0.0
                 #self.layers[i].W = (1.0 - alpha*Lamb)*self.layers[i].W - alpha*self.layers[i].V    #same alpha for all weights
-                self.layers[i].W = self.layers[i].W - alpha*self.layers[i].V    #same alpha for all weights
+                layer_r.W = layer_r.W - alpha*layer_r.V    #same alpha for all weights
             else:
                 #RMSProp
-                alpha_scaled = alpha/(np.sqrt(self.layers[i].A + 1e-8))
+                alpha_scaled = alpha/(np.sqrt(layer_r.A + 1e-8))
                 #Adam
                 #alpha_t = alpha*np.sqrt(1.0 - beta2**t)/(1.0 - beta1**t)
-                #alpha_scaled = alpha_t/(np.sqrt(self.layers[i].A + + 1e-8))
-                self.layers[i].W = self.layers[i].W - alpha_scaled*self.layers[i].V
+                #alpha_scaled = alpha_t/(np.sqrt(layer_r.A + + 1e-8))
+                layer_r.W = layer_r.W - alpha_scaled*layer_r.V
             
             #Nesterov momentum
-            #self.layers[i].W += -alpha*beta1*self.layers[i].V
+            #layer_r[i].W += -alpha*beta1*layer_r.V
     
     #train the neural network        
     def train(self, n_epoch, store_loss = False, check_derivative = False):
@@ -189,6 +194,38 @@ class ANN:
                     self.mean_loss_vals.append(np.mean(self.loss_vals[-1000:]))
                     print('Batch', i, 'learning rate', alpha ,'loss:', self.mean_loss_vals[-1])
                     
+        if self.save == True:
+            self.save_ANN()
+
+    #save using pickle (maybe too slow for very large ANNs?)
+    def save_ANN(self):
+        
+        #absolute path
+        home = os.path.abspath(os.path.dirname(__file__))
+        path = home + '/../saved_networks/'
+        
+        print('Saving ANN to', path + '/' + self.name + '.pickle')
+        
+        if os.path.exists(path) == False:
+            os.makedirs(path)
+        
+        file = open(path + self.name + '.pickle', 'wb')
+        pickle.dump(self.__dict__, file)
+        file.close()
+
+    #load using pickle
+    def load_ANN(self):
+
+        #absolute path
+        home = os.path.abspath(os.path.dirname(__file__))
+        path = home + '/../saved_networks/'
+
+        print('Loading ANN from', path + '/' + self.name + '.pickle')
+
+        file = open(path + self.name + '.pickle', 'rb')
+        self.__dict__ = pickle.load(file)
+        file.close()
+
     #compare a random back propagation derivative with a finite-difference approximation
     def check_derivative(self, X_i, y_i, n_checks):
         

@@ -50,9 +50,11 @@ ax = fig.add_subplot(131, title='data')
 ax.plot(t[0:I], y[0:I], 'b+')
 ax.plot(t[I:], y[I:], 'r+')
 
-ann = NN.ANN(X_train, y_train, alpha = 0.001, beta1 = 0.9, beta2=0.999, lamb = 0.01, decay_rate = 0.9, \
-             decay_step=10**5, n_layers = 8, n_neurons=16, activation = 'hard_tanh', \
-             neuron_based_compute=False, batch_size=32, param_specific_learn_rate=False)
+ann = NN.ANN(X = X_train, y = y_train, alpha = 0.001, beta1 = 0.9, beta2=0.999, lamb = 0.01, decay_rate = 0.9, \
+             decay_step=10**5, n_layers = 2, n_neurons=16, activation = 'relu', \
+             neuron_based_compute=False, batch_size=32, param_specific_learn_rate=True)
+
+ann.get_n_weights()
 
 ########################################
 #plot the ANN regression before training
@@ -74,7 +76,7 @@ ann = NN.ANN(X_train, y_train, alpha = 0.001, beta1 = 0.9, beta2=0.999, lamb = 0
 
 import time
 t0 = time.time()
-ann.train(50000, store_loss=True, check_derivative=False)
+ann.train(5000, store_loss=True, check_derivative=False)
 t1 = time.time()
 print(t1-t0) 
 

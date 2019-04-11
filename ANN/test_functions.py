@@ -118,7 +118,7 @@ def get_tau_EZ_regres(n_days):
     dt = 0.01
     N = np.int(n_days*day/dt)
     
-    sub = 1
+    sub = 10
     
     y = h5f['e_n_HF'][0:N:sub] - h5f['e_n_LF'][0:N:sub]
     
