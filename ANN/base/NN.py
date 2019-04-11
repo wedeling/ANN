@@ -181,6 +181,7 @@ class ANN:
             if check_derivative == True and np.mod(i, 1000) == 0:
                 self.check_derivative(self.X[rand_idx], self.y[rand_idx], 10)
             
+            #store the loss value 
             if store_loss == True:
                 l = 0.0
                 for k in range(self.n_out):
