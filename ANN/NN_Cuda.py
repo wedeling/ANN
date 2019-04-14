@@ -20,6 +20,7 @@ def init_network(X = np.zeros(1), y = np.zeros(0), alpha = 0.001, decay_rate = 1
     except IndexError:
         P['n_in'] = 1
 
+#initialize the parameters of the layers
 def init_layers():
 
     n_layers = P['n_layers']
@@ -66,9 +67,30 @@ def init_layers():
             layers[i]['V '] = cp.zeros([n_neurons_rm1 + n_bias_rm1, n_neurons])
             layers[i]['A'] = cp.zeros([n_neurons_rm1 + n_bias_rm1, n_neurons])
 
+#run the network forward
+def feed_forward(X_i, batch_size = 1):
+
+    #set the output of the input layer to the features X_i
+    if P['bias'] == False:
+        layers[0]['h'] = X_i
+    else:
+        layers[0]['h'][0:-1, :] = X_i
+        layers[0]['h'][-1, :] = 1.0
+    
+    for r in range(1, P['n_layers']+1):
+        #compute input to all neurons in current layer
+        a = cp.dot(layers[r]['W'].T, layers[r-1]['h'])
+
+        #compute activations of all neurons in current layer
+        if layers[r]['activation'] == 'tanh':
+            layers[r]['h'][0:-1,:] = cp.tanh(a)
+        elif layers[r]['activation'] == 'linear':
+            layers[r]['h'] = a
+
+        #add ones to last rwo of h if this layers has a bias neuron
+        if layers[r]['n_bias'] == 1:
+            layers[r]['h'][-1, :] = 1.0
+
 P = {}
 layers = {}
 
-init_network()
-init_layers()
-print(layers)
