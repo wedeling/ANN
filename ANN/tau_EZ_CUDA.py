@@ -3,6 +3,7 @@ import cupy as cp
 import matplotlib.pyplot as plt
 import test_functions as tf
 from NN_Cuda import *
+import time
 
 plt.close('all')
 
@@ -39,11 +40,17 @@ I = np.int(beta*y.size)
 X_train = X[0:I,:]
 y_train = y[0:I]
 
-X_train_gpu = cp.asarray(X_train)
+X_train_gpu = cp.asarray(X_train.T)
 y_train_gpu = cp.asarray(y_train)
 
-init_network(X = X_train, y = y_train, n_layers = 4, n_neurons = 128)
+batch_size = 512
+init_network(X = X_train_gpu, y = y_train_gpu, n_layers = 4, n_neurons = 256, batch_size=batch_size)
 init_layers()
 
-feed_forward(X_train_gpu[0].reshape([8,1]))
+N_train = X_train_gpu.shape[1]
+t0 = time.time()
 
+train(N_train)
+
+t1 = time.time()
+print('Execution time =', t1 - t0)

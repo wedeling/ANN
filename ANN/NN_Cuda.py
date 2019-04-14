@@ -2,7 +2,7 @@ import numpy as np
 import cupy as cp
 
 #store all the parameters defining the ANN in the global P dict
-def init_network(X = np.zeros(1), y = np.zeros(0), alpha = 0.001, decay_rate = 1.0, decay_step = 10**4, beta1 = 0.9, beta2 = 0.999, lamb = 0.0, \
+def init_network(X = cp.zeros(1), y = cp.zeros(0), alpha = 0.001, decay_rate = 1.0, decay_step = 10**4, beta1 = 0.9, beta2 = 0.999, lamb = 0.0, \
                  param_specific_learn_rate = False, loss = 'squared', activation = 'tanh', n_layers = 2, n_neurons = 16, \
                  bias = True, neuron_based_compute = False, batch_size = 1, save = True, name='ANN'):
     
@@ -12,11 +12,11 @@ def init_network(X = np.zeros(1), y = np.zeros(0), alpha = 0.001, decay_rate = 1
         P[key] = all_vars[key]
 
     #number of training data points
-    P['n_train'] = X.shape[0]
+    P['n_train'] = X.shape[1]
     
     #number of input nodes
     try:
-        P['n_in'] = X.shape[1]
+        P['n_in'] = X.shape[0]
     except IndexError:
         P['n_in'] = 1
 
@@ -90,6 +90,27 @@ def feed_forward(X_i, batch_size = 1):
         #add ones to last rwo of h if this layers has a bias neuron
         if layers[r]['n_bias'] == 1:
             layers[r]['h'][-1, :] = 1.0
+
+#train the neural network        
+def train(n_epoch, store_loss = False, check_derivative = False):
+   
+    n_train = P['n_train']
+    batch_size = P['batch_size']
+    decay_step = P['decay_step']
+    decay_rate = P['decay_rate']
+    alpha = P['alpha']
+    X = P['X']
+
+    for i in range(n_epoch):
+
+        #select a random training instance (X, y) -- use numpy, seems faster than cupy
+        rnd_idx = np.random.randint(0, n_train, batch_size)
+        
+        #compute learning rate
+        learn_rate = alpha*decay_rate**(np.int(i/decay_step))
+
+        #run the batch
+        feed_forward(X[:, rnd_idx], batch_size = batch_size)
 
 P = {}
 layers = {}
