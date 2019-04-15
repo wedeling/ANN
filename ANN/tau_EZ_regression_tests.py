@@ -52,8 +52,8 @@ ax.plot(t[0:I], y[0:I], 'b+')
 ax.plot(t[I:], y[I:], 'r+')
 
 ann = NN.ANN(X = X_train, y = y_train, alpha = 0.001, beta1 = 0.9, beta2=0.999, lamb = 0.01, decay_rate = 0.9, \
-             decay_step=10**5, n_layers = 4, n_neurons=256, activation = 'tanh', \
-             neuron_based_compute=False, batch_size=512, param_specific_learn_rate=True)
+             decay_step=10**5, n_layers = 4, n_neurons=1024, activation = 'tanh', \
+             neuron_based_compute=False, batch_size=32, param_specific_learn_rate=True)
 
 ann.get_n_weights()
 

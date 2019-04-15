@@ -52,14 +52,13 @@ X_train_gpu = cp.asarray(X_train.T)
 y_train_gpu = cp.asarray(y_train)
 
 batch_size = 32
-init_network(X = X_train_gpu, y = y_train_gpu, n_layers = 2, n_neurons = 64, batch_size=batch_size)
+init_network(X = X_train_gpu, y = y_train_gpu, n_layers = 4, n_neurons = 2048, batch_size=batch_size)
 init_layers()
 
 N_train = X_train_gpu.shape[1]
+
 t0 = time.time()
-
 train(N_train)
-
 t1 = time.time()
 print('Training time =', t1 - t0)
 
@@ -70,10 +69,8 @@ print('Training time =', t1 - t0)
 ax = fig.add_subplot(122, title='trained prediction')
 
 y_hat = cp.zeros(N_train)
-
 for i in range(N_train):
     y_hat[i] = feed_forward(X_train_gpu[:,i].reshape([N_feat, 1]))[0][0]
-    #print(feed_forward(X_train_gpu[:,i].reshape([N_feat, 1])))
    
 y_hat = cp.asnumpy(y_hat)
 

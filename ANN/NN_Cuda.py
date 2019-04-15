@@ -2,7 +2,7 @@ import numpy as np
 import cupy as cp
 
 #store all the parameters defining the ANN in the global P dict
-def init_network(X = cp.zeros(1), y = cp.zeros(0), alpha = 0.001, decay_rate = 1.0, decay_step = 10**4, beta1 = 0.9, beta2 = 0.999, lamb = 0.0, \
+def init_network(X = cp.zeros(1), y = cp.zeros(0), alpha = 0.001, decay_rate = 1.0, decay_step = 10**5, beta1 = 0.9, beta2 = 0.999, lamb = 0.0, \
                  param_specific_learn_rate = False, loss = 'squared', activation = 'tanh', n_layers = 2, n_neurons = 16, \
                  bias = True, neuron_based_compute = False, batch_size = 1, save = True, name='ANN'):
     
@@ -64,7 +64,7 @@ def init_layers():
             n_bias_rm1 = layers[i-1]['n_bias']
             layers[i]['W'] = cp.random.randn(n_neurons_rm1 + n_bias_rm1, n_neurons)*cp.sqrt(1.0/n_neurons_rm1)
             layers[i]['L_grad_W'] = cp.zeros([n_neurons_rm1 + n_bias_rm1, n_neurons])
-            layers[i]['V '] = cp.zeros([n_neurons_rm1 + n_bias_rm1, n_neurons])
+            layers[i]['V'] = cp.zeros([n_neurons_rm1 + n_bias_rm1, n_neurons])
             layers[i]['A'] = cp.zeros([n_neurons_rm1 + n_bias_rm1, n_neurons])
 
 #run the network forward
@@ -74,9 +74,8 @@ def feed_forward(X_i, batch_size = 1):
     if P['bias'] == False:
         layers[0]['h'] = X_i
     else:
-        layers[0]['h'] = cp.zeros([layers[0]['n_neurons'] + layers[0]['n_bias'], batch_size])
+        layers[0]['h'] = cp.ones([layers[0]['n_neurons'] + layers[0]['n_bias'], batch_size])
         layers[0]['h'][0:-1, :] = X_i
-        layers[0]['h'][-1, :] = 1.0
     
     for r in range(1, P['n_layers']+1):
         #compute input to all neurons in current layer
@@ -141,7 +140,17 @@ def compute_L_grad_W(r, learn_rate):
     h_rm1 = layers[r-1]['h']
     delta_ho_grad_Phi = layers[r]['delta_ho']*layers[r]['grad_Phi']
     layers[r]['L_grad_W'] = cp.dot(h_rm1, delta_ho_grad_Phi.T)
-    layers[r]['W'] -= learn_rate*layers[r]['L_grad_W']
+    beta1 = P['beta1']
+    beta2 = P['beta2']
+
+    #momentum
+    layers[r]['V'] = beta1*layers[r]['V'] + (1.0 - beta1)*layers[r]['L_grad_W']
+
+    #moving average of squared gradient magnitude
+    layers[r]['A'] = beta2*layers[r]['A'] + (1.0 - beta2)*layers[r]['L_grad_W']**2
+
+    #update weights
+    layers[r]['W'] -= learn_rate/(cp.sqrt(layers[r]['A'] + 1e-8))*layers[r]['V']
 
 #back propagation
 def back_prop(y_i, n_layers, learn_rate):
@@ -179,4 +188,3 @@ def train(n_epoch, store_loss = False, check_derivative = False):
 
 P = {}
 layers = {}
-
