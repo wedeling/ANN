@@ -74,6 +74,7 @@ def feed_forward(X_i, batch_size = 1):
     if P['bias'] == False:
         layers[0]['h'] = X_i
     else:
+        layers[0]['h'] = cp.zeros([layers[0]['n_neurons'] + layers[0]['n_bias'], batch_size])
         layers[0]['h'][0:-1, :] = X_i
         layers[0]['h'][-1, :] = 1.0
     
@@ -83,13 +84,19 @@ def feed_forward(X_i, batch_size = 1):
 
         #compute activations of all neurons in current layer
         if layers[r]['activation'] == 'tanh':
-            layers[r]['h'][0:-1,:] = cp.tanh(a)
+            layers[r]['h'] = cp.tanh(a)
         elif layers[r]['activation'] == 'linear':
             layers[r]['h'] = a
 
         #add ones to last rwo of h if this layers has a bias neuron
         if layers[r]['n_bias'] == 1:
-            layers[r]['h'][-1, :] = 1.0
+            #NOTE: vstack is inefficient, use prev method, but reinit all h when changing batch size
+            #layers[r]['h'][-1, :] = 1.0
+            layers[r]['h'] = cp.vstack([layers[r]['h'], cp.ones(batch_size)])
+
+        compute_grad_Phi(r)
+    
+    return layers[P['n_layers']]['h']
 
 #compute the gradient of L wrt the activation of the output layer
 def compute_delta_oo(y_i, r):
@@ -97,11 +104,14 @@ def compute_delta_oo(y_i, r):
     h = layers[r]['h']
 
     #assumes a linear output layer
-    if P['loss'] = 'squared':
+    if P['loss'] == 'squared':
         layers[r]['delta_ho'] = -2.0*(y_i - h)
 
 #compute the gradient of L wrt the activation of the output layer
 def compute_delta_ho(r):
+
+    n_neurons = layers[r]['n_neurons']
+
     #get the delta_ho values of the next layer (layer r+1)
     delta_h_rp1_o = layers[r+1]['delta_ho']
     
@@ -112,25 +122,36 @@ def compute_delta_ho(r):
     W_rp1 = layers[r+1]['W']
    
     #compute delta_ho := partial L / partial h
-    layers[r]['delta_ho'] = cp.dot(W_rp1, delta_h_rp1_o*grad_Phi_rp1)[0:self.n_neurons, :]
+    layers[r]['delta_ho'] = cp.dot(W_rp1, delta_h_rp1_o*grad_Phi_rp1)[0:n_neurons, :]
 
 #compute the gradient in the activation function Phi wrt its input
-def compute_grad_Phi(self, r):
+def compute_grad_Phi(r):
 
     activation = layers[r]['activation']
-    
+    h = layers[r]['h']
+    n_neurons = layers[r]['n_neurons']
+    batch_size = P['batch_size']
+
     if activation == 'linear':
-        grad_Phi = np.ones([self.n_neurons, self.batch_size])
+        layers[r]['grad_Phi'] = cp.ones([n_neurons, batch_size])
     elif activation == 'tanh':
-        self.grad_Phi = 1.0 - self.h[0:self.n_neurons]**2
+        layers[r]['grad_Phi'] = 1.0 - h[0:n_neurons, :]**2
 
-def back_prop(self, y_i, r):
+def compute_L_grad_W(r, learn_rate):
+    h_rm1 = layers[r-1]['h']
+    delta_ho_grad_Phi = layers[r]['delta_ho']*layers[r]['grad_Phi']
+    layers[r]['L_grad_W'] = cp.dot(h_rm1, delta_ho_grad_Phi.T)
+    layers[r]['W'] -= learn_rate*layers[r]['L_grad_W']
 
-    if r == P['n_layers']:
-        compute_delta_oo(y_i, r)
-    else
-        compute_delta_ho(r)
+#back propagation
+def back_prop(y_i, n_layers, learn_rate):
 
+    for r in range(n_layers, 0, -1):
+        if r == n_layers:
+            compute_delta_oo(y_i, r)
+        else:
+            compute_delta_ho(r)
+        compute_L_grad_W(r, learn_rate)        
 
 #train the neural network        
 def train(n_epoch, store_loss = False, check_derivative = False):
@@ -140,9 +161,11 @@ def train(n_epoch, store_loss = False, check_derivative = False):
     decay_step = P['decay_step']
     decay_rate = P['decay_rate']
     alpha = P['alpha']
+    n_layers = P['n_layers']
     X = P['X']
+    y = P['y']
 
-for i in range(n_epoch):
+    for i in range(n_epoch):
 
         #select a random training instance (X, y) -- use numpy, seems faster than cupy
         rnd_idx = np.random.randint(0, n_train, batch_size)
@@ -152,6 +175,7 @@ for i in range(n_epoch):
 
         #run the batch
         feed_forward(X[:, rnd_idx], batch_size = batch_size)
+        back_prop(y[rnd_idx], n_layers, learn_rate)
 
 P = {}
 layers = {}
