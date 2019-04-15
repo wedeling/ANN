@@ -176,7 +176,7 @@ class Layer:
         #the weight matrix of the next layer
         W_rp1 = self.layer_rp1.W
         
-        self.delta_ho = np.dot(W_rp1, delta_h_rp1_o*grad_Phi_rp1)[0:self.n_neurons]
+        self.delta_ho = np.dot(W_rp1, delta_h_rp1_o*grad_Phi_rp1)[0:self.n_neurons, :]
 
     #compute the gradient of the loss function wrt the weights of this layer
     def compute_L_grad_W(self):

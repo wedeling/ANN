@@ -91,6 +91,47 @@ def feed_forward(X_i, batch_size = 1):
         if layers[r]['n_bias'] == 1:
             layers[r]['h'][-1, :] = 1.0
 
+#compute the gradient of L wrt the activation of the output layer
+def compute_delta_oo(y_i, r):
+
+    h = layers[r]['h']
+
+    #assumes a linear output layer
+    if P['loss'] = 'squared':
+        layers[r]['delta_ho'] = -2.0*(y_i - h)
+
+#compute the gradient of L wrt the activation of the output layer
+def compute_delta_ho(r):
+    #get the delta_ho values of the next layer (layer r+1)
+    delta_h_rp1_o = layers[r+1]['delta_ho']
+    
+    #get the grad_Phi values of the next layer
+    grad_Phi_rp1 = layers[r+1]['grad_Phi']
+    
+    #the weight matrix of the next layer
+    W_rp1 = layers[r+1]['W']
+   
+    #compute delta_ho := partial L / partial h
+    layers[r]['delta_ho'] = cp.dot(W_rp1, delta_h_rp1_o*grad_Phi_rp1)[0:self.n_neurons, :]
+
+#compute the gradient in the activation function Phi wrt its input
+def compute_grad_Phi(self, r):
+
+    activation = layers[r]['activation']
+    
+    if activation == 'linear':
+        grad_Phi = np.ones([self.n_neurons, self.batch_size])
+    elif activation == 'tanh':
+        self.grad_Phi = 1.0 - self.h[0:self.n_neurons]**2
+
+def back_prop(self, y_i, r):
+
+    if r == P['n_layers']:
+        compute_delta_oo(y_i, r)
+    else
+        compute_delta_ho(r)
+
+
 #train the neural network        
 def train(n_epoch, store_loss = False, check_derivative = False):
    
@@ -101,7 +142,7 @@ def train(n_epoch, store_loss = False, check_derivative = False):
     alpha = P['alpha']
     X = P['X']
 
-    for i in range(n_epoch):
+for i in range(n_epoch):
 
         #select a random training instance (X, y) -- use numpy, seems faster than cupy
         rnd_idx = np.random.randint(0, n_train, batch_size)
