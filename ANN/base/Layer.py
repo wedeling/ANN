@@ -1,10 +1,10 @@
 from .Neuron import Neuron
-import numpy as np
+#import numpy as np
 
 class Layer:
     
     def __init__(self, n_neurons, r, n_layers, activation, loss, bias = False, \
-                 neuron_based_compute = False, batch_size = 1):
+                 neuron_based_compute = False, batch_size = 1, on_gpu = False):
         
         self.n_neurons = n_neurons
         self.r = r
@@ -19,11 +19,18 @@ class Layer:
             self.n_bias = 1
         else:
             self.n_bias = 0
+            
+        #use either numpy or cupy via xp based on the on_gpu flag
+        global xp
+        if on_gpu == False:
+            import numpy as xp
+        else:
+            import cupy as xp
         
-        self.a = np.zeros([n_neurons, batch_size])
-        self.h = np.zeros([n_neurons + self.n_bias, batch_size])
-        self.delta_ho = np.zeros([n_neurons, batch_size])
-        self.grad_Phi = np.zeros([n_neurons, batch_size])
+        self.a = xp.zeros([n_neurons, batch_size])
+        self.h = xp.zeros([n_neurons + self.n_bias, batch_size])
+        self.delta_ho = xp.zeros([n_neurons, batch_size])
+        self.grad_Phi = xp.zeros([n_neurons, batch_size])
         
     #connect this layer to its neighbors
     def meet_the_neighbors(self, layer_rm1, layer_rp1):
@@ -48,11 +55,11 @@ class Layer:
     def seed_neurons(self):
 
         #initialize the weight, gradient and momentum matrix
-#        self.W = np.zeros([self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons])
-        self.W = np.random.randn(self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons)*np.sqrt(1.0/self.layer_rm1.n_neurons)
-        self.L_grad_W = np.zeros([self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons])
-        self.V = np.zeros([self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons])
-        self.A = np.zeros([self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons])
+#        self.W = xp.zeros([self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons])
+        self.W = xp.random.randn(self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons)*xp.sqrt(1.0/self.layer_rm1.n_neurons)
+        self.L_grad_W = xp.zeros([self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons])
+        self.V = xp.zeros([self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons])
+        self.A = xp.zeros([self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons])
 
         if self.neuron_based_compute == True:
             neurons = []
@@ -76,20 +83,20 @@ class Layer:
     #compute the output of the current layer in one shot using matrix - vector/matrix multiplication    
     def compute_output(self, batch_size):
         
-        a = np.dot(self.W.T, self.layer_rm1.h)
+        a = xp.dot(self.W.T, self.layer_rm1.h)
        
         #apply activation to a
         if self.activation == 'linear':
             self.h = a
         elif self.activation == 'relu':
-            self.h = np.maximum(np.zeros([a.shape[0], a.shape[1]]), a)
+            self.h = xp.maximum(xp.zeros([a.shape[0], a.shape[1]]), a)
         elif self.activation == 'tanh':
-            self.h = np.tanh(a)
+            self.h = xp.tanh(a)
         elif self.activation == 'hard_tanh':
             
-            aa = np.copy(a)
-            idx_gt1 = np.where(a >= 1.0)
-            idx_ltm1 = np.where(a <= -1.0)
+            aa = xp.copy(a)
+            idx_gt1 = xp.where(a >= 1.0)
+            idx_ltm1 = xp.where(a <= -1.0)
             aa[idx_gt1[0], idx_gt1[1]] = 1.0
             aa[idx_ltm1[0], idx_ltm1[1]] = -1.0
             
@@ -101,8 +108,7 @@ class Layer:
             
         #add bias neuron output
         if self.bias == True:
-            #self.h = np.append(self.h, 1.0)
-            self.h = np.vstack([self.h, np.ones(batch_size)])
+            self.h = xp.vstack([self.h, xp.ones(batch_size)])
         self.a = a
 
         #compute the gradient of the activation function, 
@@ -112,16 +118,16 @@ class Layer:
     def compute_grad_Phi(self):
         
         if self.activation == 'linear':
-            self.grad_Phi = np.ones([self.n_neurons, self.batch_size])
+            self.grad_Phi = xp.ones([self.n_neurons, self.batch_size])
         elif self.activation == 'relu':
-            idx_lt0 = np.where(self.a < 0.0)
-            self.grad_Phi = np.ones([self.n_neurons, self.batch_size])
+            idx_lt0 = xp.where(self.a < 0.0)
+            self.grad_Phi = xp.ones([self.n_neurons, self.batch_size])
             self.grad_Phi[idx_lt0[0], idx_lt0[1]] = 0.0
         elif self.activation == 'tanh':
             self.grad_Phi = 1.0 - self.h[0:self.n_neurons]**2
         elif self.activation == 'hard_tanh':
-            idx = np.where(np.logical_and(self.a > -1.0, self.a < 1.0))
-            self.grad_Phi = np.zeros([self.n_neurons, self.batch_size])
+            idx = xp.where(xp.logical_and(self.a > -1.0, self.a < 1.0))
+            self.grad_Phi = xp.zeros([self.n_neurons, self.batch_size])
             self.grad_Phi[idx[0], idx[1]] = 1.0
 
     #compute the value of the loss function
@@ -132,11 +138,11 @@ class Layer:
         #only compute if in an output layer
         if self.layer_rp1 == None:
             if self.loss == 'perceptron_crit':
-                self.L_i = np.max([-y_i*h, 0.0])
+                self.L_i = xp.max([-y_i*h, 0.0])
             elif self.loss == 'hinge':
-                self.L_i = np.max([1.0 - y_i*h, 0.0])
+                self.L_i = xp.max([1.0 - y_i*h, 0.0])
             elif self.loss == 'logistic':
-                self.L_i = np.log(1.0 + np.exp(-y_i*h))
+                self.L_i = xp.log(1.0 + xp.exp(-y_i*h))
             elif self.loss == 'squared':
                 self.L_i = (y_i - h)**2
             else:
@@ -156,7 +162,7 @@ class Layer:
             
             if self.loss == 'logistic' and self.activation == 'linear':
 
-                self.delta_ho = -y_i*np.exp(-y_i*h)/(1.0 + np.exp(-y_i*h))
+                self.delta_ho = -y_i*xp.exp(-y_i*h)/(1.0 + xp.exp(-y_i*h))
 
             elif self.loss == 'squared' and self.activation == 'linear':
                 
@@ -176,7 +182,7 @@ class Layer:
         #the weight matrix of the next layer
         W_rp1 = self.layer_rp1.W
         
-        self.delta_ho = np.dot(W_rp1, delta_h_rp1_o*grad_Phi_rp1)[0:self.n_neurons, :]
+        self.delta_ho = xp.dot(W_rp1, delta_h_rp1_o*grad_Phi_rp1)[0:self.n_neurons, :]
 
     #compute the gradient of the loss function wrt the weights of this layer
     def compute_L_grad_W(self):
@@ -184,7 +190,7 @@ class Layer:
         
         delta_ho_grad_Phi = self.delta_ho*self.grad_Phi
 
-        self.L_grad_W = np.dot(h_rm1, delta_ho_grad_Phi.T)
+        self.L_grad_W = xp.dot(h_rm1, delta_ho_grad_Phi.T)
     
     #perform the backpropogation operations of the current layer
     def back_prop(self, y_i):
