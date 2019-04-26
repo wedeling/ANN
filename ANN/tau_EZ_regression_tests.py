@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from base import NN
 import test_functions as tf
 import time
+import cupy as cp
 
 plt.close('all')
 
@@ -40,8 +41,15 @@ y = (y - np.mean(y))/np.std(y)
 beta = 1.0
 I = np.int(beta*y.size)
 
+#train on GPU or CPU
+on_gpu = True
+
 X_train = X[0:I,:]
 y_train = y[0:I]
+
+if on_gpu == True:
+    X_train = cp.asarray(X_train)
+    y_train = cp.asarray(y_train)
 
 ##############
 #plot the data
@@ -52,8 +60,8 @@ ax.plot(t[0:I], y[0:I], 'b+')
 ax.plot(t[I:], y[I:], 'r+')
 
 ann = NN.ANN(X = X_train, y = y_train, alpha = 0.001, beta1 = 0.9, beta2=0.999, lamb = 0.01, decay_rate = 0.9, \
-             decay_step=10**5, n_layers = 4, n_neurons=1024, activation = 'tanh', \
-             neuron_based_compute=False, batch_size=32, param_specific_learn_rate=True)
+             decay_step=10**5, n_layers = 4, n_neurons=1024, activation = 'hard_tanh', \
+             neuron_based_compute=False, batch_size=32, param_specific_learn_rate=True, on_gpu=on_gpu)
 
 ann.get_n_weights()
 
@@ -76,7 +84,7 @@ ax = fig.add_subplot(132, title='before training')
 y_hat = np.zeros(N)
 
 for i in range(N):
-    y_hat[i] = ann.feed_forward(X[i])
+    y_hat[i] = ann.feed_forward(X_train[i])
     
 ax.plot(t[0:I], y_hat[0:I], 'b+')
 ax.plot(t[I:], y_hat[I:], 'r+')
@@ -85,7 +93,6 @@ ax.plot(t[I:], y_hat[I:], 'r+')
 #train the ANN
 ##############
 
-import time
 t0 = time.time()
 ann.train(5000, store_loss=True, check_derivative=False)
 t1 = time.time()
@@ -94,7 +101,7 @@ print(t1-t0)
 if len(ann.loss_vals) > 0:
     fig_loss = plt.figure()
     plt.yscale('log')
-    plt.plot(ann.mean_loss_vals)
+    plt.plot(ann.loss_vals)
 
 #######################################
 #plot the ANN regression after training
@@ -105,7 +112,7 @@ ax = fig.add_subplot(133, title='after training')
 y_hat = np.zeros(N)
 
 for i in range(N):
-    y_hat[i] = ann.feed_forward(X[i].reshape([1,N_feat]))
+    y_hat[i] = ann.feed_forward(X_train[i].reshape([1,N_feat]))
     
 ax.plot(t[0:I], y_hat[0:I], 'b+')
 ax.plot(t[I:], y_hat[I:], 'r+')
