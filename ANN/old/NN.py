@@ -4,9 +4,9 @@ from .Layer import Layer
 
 class ANN:
 
-    def __init__(self, X, y, alpha = 0.001, decay_rate = 1.0, decay_step = 10**4, beta1 = 0.9, beta2 = 0.999, lamb = 0.0, \
+    def __init__(self, X = np.zeros(1), y = np.zeros(0), alpha = 0.001, decay_rate = 1.0, decay_step = 10**4, beta1 = 0.9, beta2 = 0.999, lamb = 0.0, \
                  param_specific_learn_rate = False, loss = 'squared', activation = 'tanh', n_layers = 2, n_neurons = 16, \
-                 bias = True, neuron_based_compute = False, batch_size = 1, save = True, name='ANN', on_gpu = False):
+                 bias = True, neuron_based_compute = False, batch_size = 1, save = True, name='ANN'):
 
         #the features
         self.X = X
@@ -16,23 +16,12 @@ class ANN:
         
         #the training outputs
         self.y = y
-                
+        
         #number of input nodes
         try:
             self.n_in = X.shape[1]
         except IndexError:
             self.n_in = 1
-        
-        #use either numpy or cupy via xp based on the on_gpu flag
-        global xp
-        print('===============================')
-        if on_gpu == False:
-            print('Numpy-based computation')
-            import numpy as xp
-        else:
-            print('Cupy-based computation')
-            import cupy as xp
-        print('===============================')
         
         #number of layers (hidden + output)
         self.n_layers = n_layers
@@ -81,26 +70,27 @@ class ANN:
 
         #size of the mini batch used in stochastic gradient descent
         self.batch_size = batch_size
-        
+
         self.loss_vals = []
+        self.mean_loss_vals = []
 
         self.layers = []
         
         #add the input layer
         self.layers.append(Layer(self.n_in, 0, self.n_layers, 'linear', \
                                  self.loss, self.bias, batch_size = batch_size, \
-                                 neuron_based_compute=neuron_based_compute, on_gpu=on_gpu)) 
+                                 neuron_based_compute=neuron_based_compute)) 
         
         #add the hidden layers
         for r in range(1, self.n_layers):
             self.layers.append(Layer(self.n_neurons, r, self.n_layers, self.activation, \
                                      self.loss, self.bias, batch_size=batch_size, \
-                                     neuron_based_compute=neuron_based_compute, on_gpu=on_gpu))
+                                     neuron_based_compute=neuron_based_compute))
         
         #add the output layer
         self.layers.append(Layer(self.n_out, self.n_layers, self.n_layers, \
                                  'linear', self.loss, batch_size=batch_size, \
-                                 neuron_based_compute = neuron_based_compute, on_gpu=on_gpu))
+                                 neuron_based_compute = neuron_based_compute))
         
         self.connect_layers()
    
@@ -122,7 +112,7 @@ class ANN:
         if self.bias == False:
             self.layers[0].h = X_i
         else:
-            self.layers[0].h = xp.ones([self.n_in + 1, batch_size])
+            self.layers[0].h = np.ones([self.n_in + 1, batch_size])
             self.layers[0].h[0:self.n_in, :] = X_i.T
                     
         for i in range(1, self.n_layers+1):
@@ -159,16 +149,16 @@ class ANN:
             
             #gradient descent update step
             if self.param_specific_learn_rate == False:
-                #Lamb = self.lamb*xp.ones([self.layers[i].W.shape[0], self.layers[i].W.shape[1]])
+                #Lamb = self.lamb*np.ones([self.layers[i].W.shape[0], self.layers[i].W.shape[1]])
                 #Lamb[-1, :] = 0.0
                 #self.layers[i].W = (1.0 - alpha*Lamb)*self.layers[i].W - alpha*self.layers[i].V    #same alpha for all weights
                 layer_r.W = layer_r.W - alpha*layer_r.V    #same alpha for all weights
             else:
                 #RMSProp
-                alpha_scaled = alpha/(xp.sqrt(layer_r.A + 1e-8))
+                alpha_scaled = alpha/(np.sqrt(layer_r.A + 1e-8))
                 #Adam
-                #alpha_t = alpha*xp.sqrt(1.0 - beta2**t)/(1.0 - beta1**t)
-                #alpha_scaled = alpha_t/(xp.sqrt(layer_r.A + 1e-8))
+                #alpha_t = alpha*np.sqrt(1.0 - beta2**t)/(1.0 - beta1**t)
+                #alpha_scaled = alpha_t/(np.sqrt(layer_r.A + + 1e-8))
                 layer_r.W = layer_r.W - alpha_scaled*layer_r.V
             
             #Nesterov momentum
@@ -199,13 +189,11 @@ class ANN:
                         l += self.layers[-1].neurons[k].L_i
                     else:
                         l += self.layers[-1].L_i
+                self.loss_vals.append(l)
                 
                 if np.mod(i, 1000) == 0:
-                    loss_i = xp.mean(l)
-                    print('Batch', i, 'learning rate', alpha ,'loss:', loss_i)
-                    #note: appending a cupy value to a list is inefficient - if done every iteration
-                    #it will slow down executing significantly
-                    self.loss_vals.append(loss_i)
+                    self.mean_loss_vals.append(np.mean(self.loss_vals[-1000:]))
+                    print('Batch', i, 'learning rate', alpha ,'loss:', self.mean_loss_vals[-1])
                     
         if self.save == True:
             self.save_ANN()
@@ -292,7 +280,7 @@ class ANN:
         n_misclass = 0.0
         
         for i in range(self.n_train):
-            y_hat_i = xp.sign(self.feed_forward(self.X[i]))
+            y_hat_i = np.sign(self.feed_forward(self.X[i]))
             
             if y_hat_i != self.y[i]:
                 n_misclass += 1
@@ -308,5 +296,3 @@ class ANN:
             n_weights += self.layers[i].W.size
             
         print('This neural network has', n_weights, 'weights.')
-
-        return n_weights
