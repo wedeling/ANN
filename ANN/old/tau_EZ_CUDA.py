@@ -1,3 +1,7 @@
+"""
+NON-OBJECT ORIENTED IMPLEMENTATION OF CUDA BASED ANN
+"""
+
 import numpy as np
 import cupy as cp
 import matplotlib.pyplot as plt
@@ -51,14 +55,14 @@ ax.plot(t[I:], y[I:], 'r+')
 X_train_gpu = cp.asarray(X_train.T)
 y_train_gpu = cp.asarray(y_train)
 
-batch_size = 512
-init_network(X = X_train_gpu, y = y_train_gpu, n_layers = 4, n_neurons = 1024, batch_size=batch_size)
+batch_size = 32
+init_network(X = X_train_gpu, y = y_train_gpu, n_layers = 4, n_neurons = 2048, batch_size=batch_size)
 init_layers()
 
 N_train = X_train_gpu.shape[1]
 
 t0 = time.time()
-train(5000)
+train(N_train)
 t1 = time.time()
 print('Training time =', t1 - t0)
 

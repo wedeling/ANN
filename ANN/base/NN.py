@@ -308,3 +308,5 @@ class ANN:
             n_weights += self.layers[i].W.size
             
         print('This neural network has', n_weights, 'weights.')
+
+        return n_weights
