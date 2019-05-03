@@ -1,3 +1,4 @@
 ANN/samples/
+ANN/saved_networks/
 ./*/__pycache__
 
