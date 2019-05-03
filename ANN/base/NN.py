@@ -32,6 +32,10 @@ class ANN:
         else:
             print('Cupy-based computation')
             import cupy as xp
+            
+        print('Number of layers =', n_layers)
+        print('Number of neurons per hidden layer =', n_neurons)
+        print('Activation =', activation)
         print('===============================')
         
         #number of layers (hidden + output)
