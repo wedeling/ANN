@@ -32,6 +32,10 @@ class ANN:
         else:
             print('Cupy-based computation')
             import cupy as xp
+            
+        print('Number of layers =', n_layers)
+        print('Number of neurons per hidden layer =', n_neurons)
+        print('Activation =', activation)
         print('===============================')
         
         #number of layers (hidden + output)
@@ -52,7 +56,10 @@ class ANN:
         #training rate
         self.alpha = alpha
 
-        #the rate of decay abd decay step for alpha
+        #regularization parameter
+        self.lamb = lamb
+
+        #the rate of decay and decay step for alpha
         self.decay_rate = decay_rate        
         self.decay_step = decay_step
 
@@ -61,9 +68,6 @@ class ANN:
         
         #squared gradient parameter
         self.beta2 = beta2
-        
-        #penalty parameter
-        self.lamb = lamb
         
         #use parameter specific learning rate
         self.param_specific_learn_rate = param_specific_learn_rate
@@ -88,18 +92,18 @@ class ANN:
         
         #add the input layer
         self.layers.append(Layer(self.n_in, 0, self.n_layers, 'linear', \
-                                 self.loss, self.bias, batch_size = batch_size, \
+                                 self.loss, self.bias, batch_size = batch_size, lamb = lamb, \
                                  neuron_based_compute=neuron_based_compute, on_gpu=on_gpu)) 
         
         #add the hidden layers
         for r in range(1, self.n_layers):
             self.layers.append(Layer(self.n_neurons, r, self.n_layers, self.activation, \
-                                     self.loss, self.bias, batch_size=batch_size, \
+                                     self.loss, self.bias, batch_size=batch_size, lamb = lamb,\
                                      neuron_based_compute=neuron_based_compute, on_gpu=on_gpu))
         
         #add the output layer
         self.layers.append(Layer(self.n_out, self.n_layers, self.n_layers, \
-                                 'linear', self.loss, batch_size=batch_size, \
+                                 'linear', self.loss, batch_size=batch_size, lamb = lamb,\
                                  neuron_based_compute = neuron_based_compute, on_gpu=on_gpu))
         
         self.connect_layers()
@@ -156,21 +160,28 @@ class ANN:
             
             #moving average of squared gradient magnitude
             layer_r.A = beta2*layer_r.A + (1.0 - beta2)*layer_r.L_grad_W**2
-            
-            #gradient descent update step
+
+            #select learning rate            
             if self.param_specific_learn_rate == False:
-                #Lamb = self.lamb*xp.ones([self.layers[i].W.shape[0], self.layers[i].W.shape[1]])
-                #Lamb[-1, :] = 0.0
-                #self.layers[i].W = (1.0 - alpha*Lamb)*self.layers[i].W - alpha*self.layers[i].V    #same alpha for all weights
-                layer_r.W = layer_r.W - alpha*layer_r.V    #same alpha for all weights
+                #same alpha for all weights
+                alpha_i = alpha
+            #param specific laerning rate
             else:
                 #RMSProp
-                alpha_scaled = alpha/(xp.sqrt(layer_r.A + 1e-8))
+                alpha_i = alpha/(xp.sqrt(layer_r.A + 1e-8))
+                
                 #Adam
                 #alpha_t = alpha*xp.sqrt(1.0 - beta2**t)/(1.0 - beta1**t)
-                #alpha_scaled = alpha_t/(xp.sqrt(layer_r.A + 1e-8))
-                layer_r.W = layer_r.W - alpha_scaled*layer_r.V
-            
+                #alpha_i = alpha_t/(xp.sqrt(layer_r.A + 1e-8))
+
+            #gradient descent update step
+            if self.lamb > 0.0:
+                #with L2 regularization
+                layer_r.W = (1.0 - layer_r.Lamb*alpha_i)*layer_r.W - alpha_i*layer_r.V
+            else:
+                #without
+                layer_r.W = layer_r.W - alpha_i*layer_r.V
+           
             #Nesterov momentum
             #layer_r[i].W += -alpha*beta1*layer_r.V
     

@@ -4,7 +4,7 @@ from .Neuron import Neuron
 class Layer:
     
     def __init__(self, n_neurons, r, n_layers, activation, loss, bias = False, \
-                 neuron_based_compute = False, batch_size = 1, on_gpu = False):
+                 neuron_based_compute = False, batch_size = 1, lamb = 0.0, on_gpu = False):
         
         self.n_neurons = n_neurons
         self.r = r
@@ -14,19 +14,20 @@ class Layer:
         self.bias = bias
         self.neuron_based_compute = neuron_based_compute
         self.batch_size = batch_size
+        self.lamb = lamb   
         
-        if self.bias == True:
-            self.n_bias = 1
-        else:
-            self.n_bias = 0
-            
         #use either numpy or cupy via xp based on the on_gpu flag
         global xp
         if on_gpu == False:
             import numpy as xp
         else:
             import cupy as xp
-        
+
+        if self.bias == True:
+            self.n_bias = 1
+        else:
+            self.n_bias = 0
+       
         self.a = xp.zeros([n_neurons, batch_size])
         self.h = xp.zeros([n_neurons + self.n_bias, batch_size])
         self.delta_ho = xp.zeros([n_neurons, batch_size])
@@ -60,6 +61,11 @@ class Layer:
         self.L_grad_W = xp.zeros([self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons])
         self.V = xp.zeros([self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons])
         self.A = xp.zeros([self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons])
+        self.Lamb = xp.ones([self.layer_rm1.n_neurons + self.layer_rm1.n_bias, self.n_neurons])*self.lamb
+        
+        #do not apply regularization to the bias terms
+        if self.bias == True:
+            self.Lamb[-1, :] = 0.0
 
         if self.neuron_based_compute == True:
             neurons = []
