@@ -56,15 +56,13 @@ if on_gpu == True:
 #plot the data
 ##############
 fig = plt.figure()
-ax = fig.add_subplot(131, title='data')
+ax = fig.add_subplot(121, title=r'$\Delta E'+'\;\mathrm{data}$', xlabel=r'$t$')
 ax.plot(t[0:I], y[0:I], 'b+')
 ax.plot(t[I:], y[I:], 'r+')
 
 ann = NN.ANN(X = X_train, y = y_train, alpha = 0.001, beta1 = 0.9, beta2=0.999, lamb = 0.01, decay_rate = 0.9, \
-             decay_step=10**5, n_layers = 4, n_neurons=512, activation = 'hard_tanh', \
+             decay_step=10**5, n_layers = 4, n_neurons=128, activation = 'hard_tanh', \
              neuron_based_compute=False, batch_size=32, param_specific_learn_rate=True, on_gpu=on_gpu)
-
-ann.get_n_weights()
 
 #batch_size = 512
 #N_train = X_train.shape[0]
@@ -78,30 +76,12 @@ ann.get_n_weights()
 
 ann.get_n_weights()
 
-########################################
-#plot the ANN regression before training
-########################################
-
-ax = fig.add_subplot(132, title='before training')
-
-y_hat = np.zeros(N)
-
-for i in range(N):
-    y_hat[i] = ann.feed_forward(X_train[i])
-    
-ax.plot(t[0:I], y_hat[0:I], 'b+')
-ax.plot(t[I:], y_hat[I:], 'r+')
-
 ##############
 #train the ANN
 ##############
 
 t0 = time.time()
-<<<<<<< HEAD
 ann.train(10000, store_loss=True, check_derivative=False)
-=======
-ann.train(5000, store_loss=True, check_derivative=False)
->>>>>>> 8abffba8c8aa9909b6d21a0eac984db632fe02a0
 t1 = time.time()
 print(t1-t0) 
 
@@ -114,7 +94,7 @@ if len(ann.loss_vals) > 0:
 #plot the ANN regression after training
 #######################################
 
-ax = fig.add_subplot(133, title='after training')
+ax = fig.add_subplot(122, title='Neural net prediction', xlabel=r'$t$')
 
 y_hat = np.zeros(N)
 
