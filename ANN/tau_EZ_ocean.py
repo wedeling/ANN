@@ -318,8 +318,8 @@ mu = 1.0/(day*decay_time_mu)
 
 #start, end time (in days) + time step
 t = 250.0*day
-#t_end = (t + 5.0*365)*day
-t_end = 300.0*day
+t_end = (t + 8.0*365)*day
+#t_end = 255.0*day
 
 #time step
 dt = 0.01
@@ -332,13 +332,14 @@ n_steps = np.ceil((t_end-t)/dt).astype('int')
 sim_ID = 'ANN'
 store_ID = 'training'
 plot_frame_rate = np.floor(1.0*day/dt).astype('int')
-store_frame_rate = np.floor(0.5*day/dt).astype('int')
+#store_frame_rate = np.floor(0.5*day/dt).astype('int')
+store_frame_rate = 1
 S = np.floor(n_steps/store_frame_rate).astype('int')
 
 state_store = False
 restart = True
-store = False
-plot = True
+store = True
+plot = False
 eddy_forcing_type = 'tau_ortho'
 
 #QoI to store, First letter in caps implies an NxN field, otherwise a scalar 
@@ -430,17 +431,17 @@ for n in range(n_steps):
     #exact orthogonal pattern forcing
     elif eddy_forcing_type == 'tau_ortho':
         
-        Z_HF, E_HF = compute_ZE(P_LF*w_hat_n_HF, verbose=False)
-        Z_LF, E_LF, U_LF, S_LF, V_LF, O_LF, Sprime_LF, Zprime_LF = compute_qoi(w_hat_n_LF, verbose=False)
+        z_n_HF, e_n_HF = compute_ZE(P_LF*w_hat_n_HF, verbose=False)
+        z_n_LF, e_n_LF, u_n_LF, s_n_LF, v_n_LF, o_n_LF, sprime_n_LF, zprime_n_LF = compute_qoi(w_hat_n_LF, verbose=False)
     
-        src_E = E_LF**2/Z_LF - S_LF
-        src_Z = -E_LF**2/S_LF + Z_LF
+        src_E = e_n_LF**2/z_n_LF - s_n_LF
+        src_Z = -e_n_LF**2/s_n_LF + z_n_LF
     
-        dE = E_HF - E_LF
-        dZ = Z_HF - Z_LF
+        dE = e_n_HF - e_n_LF
+        dZ = z_n_HF - z_n_LF
     
-        tau_E = np.tanh(dE/E_LF)*np.sign(src_E)
-        tau_Z = np.tanh(dZ/Z_LF)*np.sign(src_Z)
+        tau_E = np.tanh(dE/e_n_LF)*np.sign(src_E)
+        tau_Z = np.tanh(dZ/z_n_LF)*np.sign(src_Z)
         
         #orthogonal patterns
         psi_hat_n_prime = get_psi_hat_prime(w_hat_n_LF)
@@ -478,7 +479,11 @@ for n in range(n_steps):
     if j2 == store_frame_rate and store == True:
         j2 = 0
                 
-        print('n = ', n, ' of ', n_steps)
+        if np.mod(n, np.round(day/dt)) == 0:
+            print('n =', n, 'of', n_steps)
+            
+        for qoi in QoI:
+            samples[qoi][idx] = eval(qoi)        
         
         samples['t'][idx] = t
         

@@ -77,7 +77,7 @@ for hyper in hyperparam:
         y_train, y_test = y[train_idx], y[test_idx]
     
         #create the ANN
-        ann = NN.ANN(X = X_train, y = y_train, alpha = 0.001, beta1 = 0.9, beta2=0.999, lamb = 0.01, decay_rate = 0.9, \
+        ann = NN.ANN(X = X_train, y = y_train, alpha = 0.001, beta1 = 0.9, beta2=0.999, lamb = 0.0, decay_rate = 0.9, \
                      decay_step=10**5, n_layers = n_layers, n_neurons=n_neurons, activation = 'relu', \
                      neuron_based_compute=False, batch_size=128, param_specific_learn_rate=True, save = False, on_gpu=on_gpu)
     
