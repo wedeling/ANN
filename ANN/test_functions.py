@@ -104,7 +104,8 @@ def get_tau_EZ_regres(n_days):
     # load the reference data #
     ###########################
     
-    fname = HOME + '/samples/dE_dZ_training.hdf5'
+    #fname = HOME + '/samples/dE_dZ_training.hdf5'
+    fname = HOME + '/samples/training_t_4495.1.hdf5'
     
     h5f = h5py.File(fname, 'r')
     
@@ -116,9 +117,9 @@ def get_tau_EZ_regres(n_days):
     Omega = 7.292*10**-5
     day = 24*60**2*Omega
     dt = 0.01
-    N = np.int(n_days*day/dt)
+    N = np.int(n_days*day/dt) 
     
-    sub = 10
+    sub = 1
     
     y = h5f['e_n_HF'][0:N:sub] - h5f['e_n_LF'][0:N:sub]
     
