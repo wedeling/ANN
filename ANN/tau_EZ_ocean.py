@@ -85,12 +85,14 @@ def store_samples_hdf5():
     h5f.close()    
 
 def draw_2w():
-    plt.subplot(121, aspect = 'equal', title=r'$Q_1\; ' + r't = '+ str(np.around(t/day, 2)) + '\;[days]$')
-    plt.contourf(x, y, w_np1_HF, 100)
-    plt.colorbar()
-    plt.subplot(122, aspect = 'equal', title=r'$Q_2$')
-    plt.contourf(x, y, w_np1_LF, 100)
-    plt.colorbar()
+    plt.subplot(121, title=r'$Q_1\; ' + r't = '+ str(np.around(t/day, 2)) + '\;[days]$')
+    #plt.contourf(x, y, w_np1_HF, 100)
+    plt.plot(T, DE)
+    #plt.colorbar()
+    plt.subplot(122,title=r'$Q_2$')
+    #plt.contourf(x, y, w_np1_LF, 100)
+    plt.plot(T, DE_ANN)
+    #plt.colorbar()
     plt.tight_layout()
     
 def draw_stats():
@@ -241,6 +243,7 @@ import os
 import h5py
 from scipy.integrate import simps
 from drawnow import drawnow
+from base import NN
 
 plt.close('all')
 plt.rcParams['image.cmap'] = 'seismic'
@@ -318,8 +321,8 @@ mu = 1.0/(day*decay_time_mu)
 
 #start, end time (in days) + time step
 t = 250.0*day
-t_end = (t + 8.0*365)*day
-#t_end = 255.0*day
+t_end = (t + 1.0*365)*day
+#t_end = 250.0*day
 
 #time step
 dt = 0.01
@@ -338,9 +341,13 @@ S = np.floor(n_steps/store_frame_rate).astype('int')
 
 state_store = False
 restart = True
-store = True
-plot = False
+store = False
+plot = True
 eddy_forcing_type = 'tau_ortho'
+
+####################
+# STORE PARAMETERS #
+####################
 
 #QoI to store, First letter in caps implies an NxN field, otherwise a scalar 
 QoI = ['z_n_HF', 'e_n_HF', \
@@ -366,6 +373,30 @@ if store == True:
         #a scalar
         else:
             samples[QoI[q]] = np.zeros(S)
+
+##################       
+# ANN PARAMETERS #
+##################
+
+#create empty ANN object
+ann = NN.ANN(X = np.zeros(10), y = np.zeros(1))
+#load trained ann
+ann.load_ANN()
+
+#UGLY HACK, CHANGE BY MAKING UNNORM DATA PART OF ANN??  
+#number of data points
+n_days = 365
+
+#get the data
+import test_functions as tf
+X, y_dat, _ = tf.get_tau_EZ_regres(n_days)
+
+X_mean = np.mean(X, axis = 0)
+y_mean = np.mean(y_dat, axis = 0)
+X_std = np.std(X, axis = 0)
+y_std = np.std(y_dat, axis = 0)
+
+##################
 
 #forcing term
 F = 2**1.5*np.cos(5*x)*np.cos(5*y)
@@ -414,6 +445,8 @@ j = 0; j2 = 0; idx = 0
 if plot == True:
     plt.figure()
     energy_HF = []; energy_LF = []; enstrophy_HF = []; enstrophy_LF = []; T = []
+    #TEST: REMOVE LATER
+    DE = []; DE_ANN = []
 
 #time loop
 for n in range(n_steps):    
@@ -422,7 +455,7 @@ for n in range(n_steps):
     w_hat_np1_HF, VgradW_hat_n_HF = get_w_hat_np1(w_hat_n_HF, w_hat_nm1_HF, VgradW_hat_nm1_HF, P, norm_factor)
   
     #exact eddy forcing
-    EF_hat_nm1_exact = P_LF*VgradW_hat_nm1_HF - VgradW_hat_nm1_LF 
+    EF_hat_nm1_exact = P_LF*VgradW_hat_nm1_HF - VgradW_hat_nm1_LF
 
     #EXACT eddy forcing (for reference)
     if eddy_forcing_type == 'exact':
@@ -453,8 +486,9 @@ for n in range(n_steps):
     elif eddy_forcing_type == 'unparam':
         EF_hat = np.zeros([N, int(N/2+1)])
 
+    #resolved model run
     w_hat_np1_LF, VgradW_hat_n_LF = get_w_hat_np1(w_hat_n_LF, w_hat_nm1_LF, VgradW_hat_nm1_LF, P_LF, norm_factor_LF, EF_hat)
-    
+   
     #plot results to screen during iteration
     if j == plot_frame_rate and plot == True:
         j = 0
@@ -471,9 +505,19 @@ for n in range(n_steps):
         energy_HF.append(E_HF); energy_LF.append(E_LF)
         enstrophy_HF.append(Z_HF); enstrophy_LF.append(Z_LF)
         T.append(t)
+        
+        #TEST: REMOVE LATER
+        DE.append(E_HF - E_LF)
 
-        drawnow(draw_stats)
-        #drawnow(draw_2w)
+        #TEST: REMOVE LATER
+        X_feat = np.array([Z_LF, E_LF, U_LF, S_LF, V_LF, O_LF, Sprime_LF, Zprime_LF])
+        X_feat = (X_feat - X_mean)/X_std
+        
+        dE_ann = ann.feed_forward(X_feat)[0][0]
+        DE_ANN.append(dE_ann)
+
+        #drawnow(draw_stats)
+        drawnow(draw_2w)
         
     #store samples to dict
     if j2 == store_frame_rate and store == True:

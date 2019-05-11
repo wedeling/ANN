@@ -228,7 +228,7 @@ class ANN:
         home = os.path.abspath(os.path.dirname(__file__))
         path = home + '/../saved_networks/'
         
-        print('Saving ANN to', path + '/' + self.name + '.pickle')
+        print('Saving ANN to', path + self.name + '.pickle')
         
         if os.path.exists(path) == False:
             os.makedirs(path)

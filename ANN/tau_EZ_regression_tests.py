@@ -15,7 +15,7 @@ plt.close('all')
 ###################################
 
 #number of data points
-n_days = 50
+n_days = 365
 
 #get the data
 X, y, t = tf.get_tau_EZ_regres(n_days)

@@ -1,7 +1,3 @@
-"""
-TEST THE ANN CLASS ON A REAL REGRESSION PROBLEM
-"""
-
 import numpy as np
 import matplotlib.pyplot as plt
 from base import NN
@@ -78,11 +74,11 @@ for hyper in hyperparam:
     
         #create the ANN
         ann = NN.ANN(X = X_train, y = y_train, alpha = 0.001, beta1 = 0.9, beta2=0.999, lamb = 0.0, decay_rate = 0.9, \
-                     decay_step=10**5, n_layers = n_layers, n_neurons=n_neurons, activation = 'relu', \
+                     decay_step=10**5, n_layers = n_layers, n_neurons=n_neurons, activation = 'hard_tanh', \
                      neuron_based_compute=False, batch_size=128, param_specific_learn_rate=True, save = False, on_gpu=on_gpu)
     
         #train the ANN
-        ann.train(2000, store_loss=True)
+        ann.train(4000, store_loss=True)
         
         #compute the error on the test set
         N_test = y_test.size
