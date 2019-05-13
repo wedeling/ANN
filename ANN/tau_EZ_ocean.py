@@ -88,10 +88,11 @@ def draw_2w():
     plt.subplot(121, title=r'$Q_1\; ' + r't = '+ str(np.around(t/day, 2)) + '\;[days]$')
     #plt.contourf(x, y, w_np1_HF, 100)
     plt.plot(T, DE)
+    plt.plot(T, DE_ANN)
     #plt.colorbar()
     plt.subplot(122,title=r'$Q_2$')
     #plt.contourf(x, y, w_np1_LF, 100)
-    plt.plot(T, DE_ANN)
+#    plt.plot(T, DE_ANN)
     #plt.colorbar()
     plt.tight_layout()
     
@@ -379,22 +380,14 @@ if store == True:
 ##################
 
 #create empty ANN object
-ann = NN.ANN(X = np.zeros(10), y = np.zeros(1))
+ann = NN.ANN(X = np.zeros(10), y = np.zeros(1), standardize = False)
 #load trained ann
 ann.load_ANN()
 
-#UGLY HACK, CHANGE BY MAKING UNNORM DATA PART OF ANN??  
-#number of data points
-n_days = 365
-
-#get the data
-import test_functions as tf
-X, y_dat, _ = tf.get_tau_EZ_regres(n_days)
-
-X_mean = np.mean(X, axis = 0)
-y_mean = np.mean(y_dat, axis = 0)
-X_std = np.std(X, axis = 0)
-y_std = np.std(y_dat, axis = 0)
+X_mean = ann.X_mean
+y_mean = ann.y_mean
+X_std = ann.X_std
+y_std = ann.y_std
 
 ##################
 
@@ -514,7 +507,7 @@ for n in range(n_steps):
         X_feat = (X_feat - X_mean)/X_std
         
         dE_ann = ann.feed_forward(X_feat)[0][0]
-        DE_ANN.append(dE_ann)
+        DE_ANN.append(dE_ann*y_std + y_mean)
 
         #drawnow(draw_stats)
         drawnow(draw_2w)

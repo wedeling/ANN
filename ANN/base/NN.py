@@ -6,7 +6,8 @@ class ANN:
 
     def __init__(self, X, y, alpha = 0.001, decay_rate = 1.0, decay_step = 10**4, beta1 = 0.9, beta2 = 0.999, lamb = 0.0, \
                  param_specific_learn_rate = False, loss = 'squared', activation = 'tanh', n_layers = 2, n_neurons = 16, \
-                 bias = True, neuron_based_compute = False, batch_size = 1, save = True, name='ANN', on_gpu = False):
+                 bias = True, neuron_based_compute = False, batch_size = 1, save = True, name='ANN', on_gpu = False, \
+                 standardize = True):
 
         #the features
         self.X = X
@@ -37,6 +38,17 @@ class ANN:
         print('Number of neurons per hidden layer =', n_neurons)
         print('Activation =', activation)
         print('===============================')
+
+        #standardize the training data
+        if standardize == True:
+            
+            self.X_mean = xp.mean(X, axis = 0)
+            self.X_std = xp.std(X, axis = 0)
+            self.y_mean = xp.mean(y, axis = 0)
+            self.y_std = xp.std(y, axis = 0)
+            
+            self.X = (X - self.X_mean)/self.X_std
+            self.y = (y - self.y_mean)/self.y_std
         
         #number of layers (hidden + output)
         self.n_layers = n_layers

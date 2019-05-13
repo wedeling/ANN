@@ -25,14 +25,14 @@ N = t.size
 #standardize the features and the data
 try:
     N_feat = X.shape[1]
-    for i in range(N_feat):
-        X[:,i] = (X[:,i] - np.mean(X[:,i]))/np.std(X[:,i])
+#    for i in range(N_feat):
+#        X[:,i] = (X[:,i] - np.mean(X[:,i]))/np.std(X[:,i])
 
 except IndexError:
     N_feat = 1
-    X = (X - np.mean(X))/np.std(X) 
+#    X = (X - np.mean(X))/np.std(X) 
     
-y = (y - np.mean(y))/np.std(y)
+#y = (y - np.mean(y))/np.std(y)
 
 #split the data into a training and a validation data set, if required
 
@@ -52,27 +52,9 @@ if on_gpu == True:
     X_train = cp.asarray(X_train)
     y_train = cp.asarray(y_train)
 
-##############
-#plot the data
-##############
-fig = plt.figure()
-ax = fig.add_subplot(121, title=r'$\Delta E'+'\;\mathrm{data}$', xlabel=r'$t$')
-ax.plot(t[0:I], y[0:I], 'b+')
-ax.plot(t[I:], y[I:], 'r+')
-
 ann = NN.ANN(X = X_train, y = y_train, alpha = 0.001, beta1 = 0.9, beta2=0.999, lamb = 0.01, decay_rate = 0.9, \
              decay_step=10**5, n_layers = 4, n_neurons=128, activation = 'hard_tanh', \
              neuron_based_compute=False, batch_size=32, param_specific_learn_rate=True, on_gpu=on_gpu)
-
-#batch_size = 512
-#N_train = X_train.shape[0]
-#print(N_train)
-#t0 = time.time()
-#for i in range(N_train):
-#    rnd_idx = np.random.randint(0, N_train, batch_size)
-#    ann.feed_forward(X_train[rnd_idx, :].reshape([batch_size, N_feat]), batch_size=batch_size)
-#t1 = time.time()
-#print('Execution time =', t1 - t0)
 
 ann.get_n_weights()
 
@@ -90,6 +72,15 @@ if len(ann.loss_vals) > 0:
     plt.yscale('log')
     plt.plot(ann.loss_vals)
 
+##############
+#plot the data
+##############
+
+fig = plt.figure()
+ax = fig.add_subplot(121, title=r'$\Delta E'+'\;\mathrm{data}$', xlabel=r'$t$')
+ax.plot(t[0:I], y[0:I], 'b+')
+ax.plot(t[I:], y[I:], 'r+')
+
 #######################################
 #plot the ANN regression after training
 #######################################
@@ -98,8 +89,11 @@ ax = fig.add_subplot(122, title='Neural net prediction', xlabel=r'$t$')
 
 y_hat = np.zeros(N)
 
+#if standardize = True in ANN
+X_pred = (X - ann.X_mean)/ann.X_std
+
 for i in range(N):
-    y_hat[i] = ann.feed_forward(X_train[i].reshape([1,N_feat]))
+    y_hat[i] = ann.feed_forward(X_pred[i].reshape([1,N_feat]))
     
 ax.plot(t[0:I], y_hat[0:I], 'b+')
 ax.plot(t[I:], y_hat[I:], 'r+')
