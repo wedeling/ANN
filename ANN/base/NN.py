@@ -250,15 +250,15 @@ class ANN:
         file.close()
 
     #load using pickle
-    def load_ANN(self):
+    def load_ANN(self, name):
 
         #absolute path
         home = os.path.abspath(os.path.dirname(__file__))
         path = home + '/../saved_networks/'
 
-        print('Loading ANN from', path + '/' + self.name + '.pickle')
+        print('Loading ANN from', path + name + '.pickle')
 
-        file = open(path + self.name + '.pickle', 'rb')
+        file = open(path + name + '.pickle', 'rb')
         self.__dict__ = pickle.load(file)
         file.close()
 

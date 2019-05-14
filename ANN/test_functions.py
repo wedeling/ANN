@@ -93,7 +93,7 @@ def get_sin_regres(N):
     
     return X, y
 
-def get_tau_EZ_regres(n_days):
+def get_tau_EZ_regres(n_days, name):
     
     import os
     import h5py
@@ -121,7 +121,10 @@ def get_tau_EZ_regres(n_days):
     
     sub = 1
     
-    y = h5f['e_n_HF'][0:N:sub] - h5f['e_n_LF'][0:N:sub]
+    if name == 'dE':
+        y = h5f['e_n_HF'][0:N:sub] - h5f['e_n_LF'][0:N:sub]
+    else:
+        y = h5f['z_n_HF'][0:N:sub] - h5f['z_n_LF'][0:N:sub]
     
     N_feat = 8
     X = np.zeros([y.size, N_feat])

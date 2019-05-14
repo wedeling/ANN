@@ -322,8 +322,8 @@ mu = 1.0/(day*decay_time_mu)
 
 #start, end time (in days) + time step
 t = 250.0*day
-t_end = (t + 1.0*365)*day
-#t_end = 250.0*day
+t_end = (t + 8.0*365)*day
+#t_end = 251.0*day
 
 #time step
 dt = 0.01
@@ -334,7 +334,7 @@ n_steps = np.ceil((t_end-t)/dt).astype('int')
 #############
 
 sim_ID = 'ANN'
-store_ID = 'training'
+store_ID = 'T2'
 plot_frame_rate = np.floor(1.0*day/dt).astype('int')
 #store_frame_rate = np.floor(0.5*day/dt).astype('int')
 store_frame_rate = 1
@@ -342,9 +342,9 @@ S = np.floor(n_steps/store_frame_rate).astype('int')
 
 state_store = False
 restart = True
-store = False
+store = True
 plot = True
-eddy_forcing_type = 'tau_ortho'
+eddy_forcing_type = 'ann_tau_ortho'
 
 ####################
 # STORE PARAMETERS #
@@ -379,15 +379,26 @@ if store == True:
 # ANN PARAMETERS #
 ##################
 
-#create empty ANN object
-ann = NN.ANN(X = np.zeros(10), y = np.zeros(1), standardize = False)
-#load trained ann
-ann.load_ANN()
+if eddy_forcing_type == 'ann_tau_ortho':
 
-X_mean = ann.X_mean
-y_mean = ann.y_mean
-X_std = ann.X_std
-y_std = ann.y_std
+    #create empty ANN object
+    dE_ann = NN.ANN(X = np.zeros(10), y = np.zeros(1), standardize = False)
+    #load trained ann
+    dE_ann.load_ANN(name='dE')
+
+    #create empty ANN object
+    dZ_ann = NN.ANN(X = np.zeros(10), y = np.zeros(1), standardize = False)
+    #load trained ann
+    dZ_ann.load_ANN(name='dZ')
+    
+    #NOTE: making the assumption here that both ANNs use the same features
+    X_mean = dE_ann.X_mean
+    X_std = dE_ann.X_std
+
+    dE_mean = dE_ann.y_mean
+    dE_std = dE_ann.y_std
+    dZ_mean = dZ_ann.y_mean
+    dZ_std = dZ_ann.y_std
 
 ##################
 
@@ -465,7 +476,8 @@ for n in range(n_steps):
     
         dE = e_n_HF - e_n_LF
         dZ = z_n_HF - z_n_LF
-    
+
+        #inverse unclosed time scales
         tau_E = np.tanh(dE/e_n_LF)*np.sign(src_E)
         tau_Z = np.tanh(dZ/z_n_LF)*np.sign(src_Z)
         
@@ -473,6 +485,47 @@ for n in range(n_steps):
         psi_hat_n_prime = get_psi_hat_prime(w_hat_n_LF)
         w_hat_n_prime = get_w_hat_prime(w_hat_n_LF)
 
+        #reduced model-error source term
+        EF_hat = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime 
+        
+    #ANN surrogate of the orthogonal pattern forcing
+    elif eddy_forcing_type == 'ann_tau_ortho':
+
+        #compute features
+        z_n_LF, e_n_LF, u_n_LF, s_n_LF, v_n_LF, o_n_LF, sprime_n_LF, zprime_n_LF = compute_qoi(w_hat_n_LF, verbose=False)
+    
+        #source terms of the E and Z ODEs
+        src_E = e_n_LF**2/z_n_LF - s_n_LF
+        src_Z = -e_n_LF**2/s_n_LF + z_n_LF
+
+        #EXACT dE and dZ, leave uncommented for one-way coupled simulations
+        z_n_HF, e_n_HF = compute_ZE(P_LF*w_hat_n_HF, verbose=False)
+#        dE_tilde = e_n_HF - e_n_LF
+#        dZ_tilde = z_n_HF - z_n_LF
+
+        #features
+        X_feat = np.array([z_n_LF, e_n_LF, u_n_LF, s_n_LF, v_n_LF, o_n_LF, sprime_n_LF, zprime_n_LF])
+        
+        #standardize by data mean and std if standardize flag was set to True during ann training
+        X_feat = (X_feat - X_mean)/X_std
+        
+        #feed forward of the neural net
+        dE_tilde = dE_ann.feed_forward(X_feat)[0][0]
+        dZ_tilde = dZ_ann.feed_forward(X_feat)[0][0]
+        
+        #if standardize flag was True during ANN training
+        dE_tilde = dE_tilde*dE_std + dE_mean
+        dZ_tilde = dZ_tilde*dZ_std + dZ_mean
+
+        #inverse unclosed time scales
+        tau_E = np.tanh(dE_tilde/e_n_LF)*np.sign(src_E)
+        tau_Z = np.tanh(dZ_tilde/z_n_LF)*np.sign(src_Z)
+        
+        #orthogonal patterns
+        psi_hat_n_prime = get_psi_hat_prime(w_hat_n_LF)
+        w_hat_n_prime = get_w_hat_prime(w_hat_n_LF)
+
+        #reduced model-error source term
         EF_hat = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime 
         
     #NO eddy forcing
@@ -498,19 +551,9 @@ for n in range(n_steps):
         energy_HF.append(E_HF); energy_LF.append(E_LF)
         enstrophy_HF.append(Z_HF); enstrophy_LF.append(Z_LF)
         T.append(t)
-        
-        #TEST: REMOVE LATER
-        DE.append(E_HF - E_LF)
 
-        #TEST: REMOVE LATER
-        X_feat = np.array([Z_LF, E_LF, U_LF, S_LF, V_LF, O_LF, Sprime_LF, Zprime_LF])
-        X_feat = (X_feat - X_mean)/X_std
-        
-        dE_ann = ann.feed_forward(X_feat)[0][0]
-        DE_ANN.append(dE_ann*y_std + y_mean)
-
-        #drawnow(draw_stats)
-        drawnow(draw_2w)
+        drawnow(draw_stats)
+        #drawnow(draw_2w)
         
     #store samples to dict
     if j2 == store_frame_rate and store == True:
