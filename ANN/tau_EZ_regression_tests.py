@@ -54,7 +54,7 @@ if on_gpu == True:
     y_train = cp.asarray(y_train)
 
 ann = NN.ANN(X = X_train, y = y_train, alpha = 0.001, beta1 = 0.9, beta2=0.999, lamb = 0.01, decay_rate = 0.9, \
-             decay_step=10**5, n_layers = 4, n_neurons=128, activation = 'hard_tanh', \
+             decay_step=10**5, n_layers = 4, n_neurons=256, activation = 'hard_tanh', \
              neuron_based_compute=False, batch_size=128, param_specific_learn_rate=True, on_gpu=on_gpu, name=name)
 
 ann.get_n_weights()
@@ -64,7 +64,7 @@ ann.get_n_weights()
 ##############
 
 t0 = time.time()
-ann.train(50000, store_loss=True, check_derivative=False)
+ann.train(10000, store_loss=True, check_derivative=False)
 t1 = time.time()
 print(t1-t0) 
 
