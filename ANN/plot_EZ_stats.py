@@ -28,10 +28,10 @@ QoI = list(h5f.keys())
 
 print(QoI)
 
-e_LF, pdf_e_LF = get_kde(h5f['e_n_LF'][0:-1], N_points = 200)
-z_LF, pdf_z_LF = get_kde(h5f['z_n_LF'][0:-1], N_points = 200)
-e_HF, pdf_e_HF = get_kde(h5f['e_n_HF'][0:-1], N_points = 200)
-z_HF, pdf_z_HF = get_kde(h5f['z_n_HF'][0:-1], N_points = 200)
+e_LF, pdf_e_LF = get_kde(h5f['e_n_LF'][0:-1], N_points = 100)
+z_LF, pdf_z_LF = get_kde(h5f['z_n_LF'][0:-1], N_points = 100)
+e_HF, pdf_e_HF = get_kde(h5f['e_n_HF'][0:-1], N_points = 100)
+z_HF, pdf_z_HF = get_kde(h5f['z_n_HF'][0:-1], N_points = 100)
 
 fig = plt.figure(figsize=[8, 4])
 ax1 = fig.add_subplot(121, xlabel=r'energy', yticks = [])

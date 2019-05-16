@@ -130,10 +130,9 @@ class ANN:
             self.layers[i].meet_the_neighbors(self.layers[i-1], self.layers[i+1])
     
     #run the network forward
+    #X_i needs to have shape [batch size, number of features]
     def feed_forward(self, X_i, batch_size = 1):
-        
-        X_i = X_i.reshape([batch_size, self.n_in])
-               
+              
         #set the features at the output of in the input layer
         if self.bias == False:
             self.layers[0].h = X_i
@@ -146,17 +145,52 @@ class ANN:
                 #compute the output locally in each neuron
                 self.layers[i].compute_output_local()
             else:
-                #compute the output on the layer lavel, using matric-vector multiplication for a 
+                #compute the output on the layer using matrix-maxtrix multiplication
                 self.layers[i].compute_output(batch_size)
             
         return self.layers[-1].h
+ 
+    #compute jacobian of the neural net via back propagation
+    def jacobian(self, X_i, batch_size = 1, feed_forward = False):
         
+        if feed_forward == True:
+            self.feed_forward(X_i, batch_size=batch_size)
+        
+        for i in range(self.n_layers, -1, -1):
+            self.layers[i].compute_delta_hy()
+            
+        #delta_hy of the input layer = the Jacobian of the neural net
+        return self.layers[0].delta_hy
+            
+    #compute jacobian via finite differences
+    def jacobian_FD(self, X_i, batch_size = 1):
+        
+        eps = 1e-8
+        
+        jac_FD = np.zeros([self.n_in, batch_size])
+        
+        h1 = self.feed_forward(X_i, batch_size = batch_size)
+        
+        for i in range(self.n_in):
+            X2 = np.copy(X_i)
+            
+            #perturb a single feature
+            X2[:, i] += eps
+        
+            h2 = self.feed_forward(X2, batch_size = batch_size)
+        
+            #FD approximation of gradient of NN output wrt i-th feature
+            jac_FD[i] = (h2 - h1)/eps
+            
+        return jac_FD
+    
+    #back propagation algorithm    
     def back_prop(self, y_i):
 
-        #start back propagation over hidden layers, starting with layer before output layer
+        #start back propagation over hidden layers, starting with output layer
         for i in range(self.n_layers, 0, -1):
             self.layers[i].back_prop(y_i)
-        
+
     #update step of the weights
     def batch(self, X_i, y_i, alpha, beta1, beta2, t):
         
