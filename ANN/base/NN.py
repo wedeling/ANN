@@ -158,6 +158,9 @@ class ANN:
         
         for i in range(self.n_layers, -1, -1):
             self.layers[i].compute_delta_hy()
+            #also compute the gradient of the output wrt the weights
+            if i > 0:
+                self.layers[i].compute_y_grad_W()
             
         #delta_hy of the input layer = the Jacobian of the neural net
         return self.layers[0].delta_hy

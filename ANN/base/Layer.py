@@ -208,6 +208,14 @@ class Layer:
         
         self.delta_ho = xp.dot(W_rp1, delta_ho_rp1*grad_Phi_rp1)[0:self.n_neurons, :]
 
+    #compute the gradient of the output wrt the weights of this layer
+    def compute_y_grad_W(self):
+        h_rm1 = self.layer_rm1.h
+        
+        delta_hy_grad_Phi = self.delta_hy*self.grad_Phi
+
+        self.y_grad_W = xp.dot(h_rm1, delta_hy_grad_Phi.T)
+
     #compute the gradient of the loss function wrt the weights of this layer
     def compute_L_grad_W(self):
         h_rm1 = self.layer_rm1.h
