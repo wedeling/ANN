@@ -154,7 +154,25 @@ class Layer:
             else:
                 print('Cannot compute loss: unknown loss and/or activation function')
                 import sys; sys.exit()
+        
+    #compute the gradient of the output wrt the activation functions of this layer
+    def compute_delta_hy(self):
 
+        #if this layer is the output layer        
+        if self.layer_rp1 == None:
+            self.delta_hy = xp.ones([self.n_neurons, self.batch_size])
+        else:
+            #get the delta_ho values of the next layer (layer r+1)
+            delta_hy_rp1 = self.layer_rp1.delta_hy
+            
+            #get the grad_Phi values of the next layer
+            grad_Phi_rp1 = self.layer_rp1.grad_Phi
+            
+            #the weight matrix of the next layer
+            W_rp1 = self.layer_rp1.W
+            
+            self.delta_hy = xp.dot(W_rp1, delta_hy_rp1*grad_Phi_rp1)[0:self.n_neurons, :]
+    
     #initialize the value of delta_ho at the output layer
     def compute_delta_oo(self, y_i):
         
@@ -180,7 +198,7 @@ class Layer:
     #compute the gradient of the loss function wrt the activation functions of this layer
     def compute_delta_ho(self):
         #get the delta_ho values of the next layer (layer r+1)
-        delta_h_rp1_o = self.layer_rp1.delta_ho
+        delta_ho_rp1 = self.layer_rp1.delta_ho
         
         #get the grad_Phi values of the next layer
         grad_Phi_rp1 = self.layer_rp1.grad_Phi
@@ -188,7 +206,7 @@ class Layer:
         #the weight matrix of the next layer
         W_rp1 = self.layer_rp1.W
         
-        self.delta_ho = xp.dot(W_rp1, delta_h_rp1_o*grad_Phi_rp1)[0:self.n_neurons, :]
+        self.delta_ho = xp.dot(W_rp1, delta_ho_rp1*grad_Phi_rp1)[0:self.n_neurons, :]
 
     #compute the gradient of the loss function wrt the weights of this layer
     def compute_L_grad_W(self):
