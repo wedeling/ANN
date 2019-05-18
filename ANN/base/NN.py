@@ -5,6 +5,7 @@ from .Layer import Layer
 class ANN:
 
     def __init__(self, X, y, alpha = 0.001, decay_rate = 1.0, decay_step = 10**4, beta1 = 0.9, beta2 = 0.999, lamb = 0.0, \
+                 phi = 0.0, lamb_J = 0.0, \
                  param_specific_learn_rate = False, loss = 'squared', activation = 'tanh', n_layers = 2, n_neurons = 16, \
                  bias = True, neuron_based_compute = False, batch_size = 1, save = True, name='ANN', on_gpu = False, \
                  standardize = True):
@@ -68,8 +69,13 @@ class ANN:
         #training rate
         self.alpha = alpha
 
-        #regularization parameter
+        #L2 regularization parameter
         self.lamb = lamb
+
+        #Jacobian regularization and finite difference parameter (phi)
+        self.lamb_J = lamb_J
+        self.phi = phi
+        self.test = []
 
         #the rate of decay and decay step for alpha
         self.decay_rate = decay_rate        
@@ -199,6 +205,11 @@ class ANN:
         
         self.feed_forward(X_i, self.batch_size)
         self.back_prop(y_i)
+
+        #if Jacobian regularization is used
+        #if self.phi > 0.0:
+        self.jacobian(X_i, batch_size=self.batch_size)
+        self.test.append(np.linalg.norm(self.layers[0].delta_hy)**2)
         
         for r in range(1, self.n_layers+1):
 
@@ -214,7 +225,7 @@ class ANN:
             if self.param_specific_learn_rate == False:
                 #same alpha for all weights
                 alpha_i = alpha
-            #param specific laerning rate
+            #param specific learning rate
             else:
                 #RMSProp
                 alpha_i = alpha/(xp.sqrt(layer_r.A + 1e-8))
@@ -227,8 +238,36 @@ class ANN:
             if self.lamb > 0.0:
                 #with L2 regularization
                 layer_r.W = (1.0 - layer_r.Lamb*alpha_i)*layer_r.W - alpha_i*layer_r.V
+            elif self.phi > 0.0:
+                
+                #dydx, the Jacobian of the output y
+                dydX = self.layers[0].delta_hy
+                
+                #dydW
+                dydW = layer_r.y_grad_W
+                
+                #regularize wrt squared Frobenius norm R ==> dRda = 2a, a = dydx
+                #This is the 'adversarial direction', direc of max. change
+                X_hat = X_i + self.phi*2.0*dydX.T
+                
+                #double back prop
+                self.feed_forward(X_hat, batch_size=self.batch_size)
+                self.jacobian(X_i, batch_size=self.batch_size)
+                
+                #output gradient wrt weights of the adversarial example
+                #CHECK THIS TERM AS FUNCTION OF PHI
+                dydW_hat = layer_r.y_grad_W
+                
+                #FD approximation of the mixed partial derivative of y wrt W and X
+                #CHECK THIS TERM
+                d2y_dWdx = (dydW_hat - dydW)/self.phi
+                
+                #weight update with Jacobian regularization (NO MOMENTUM TO MIXED TERM - OK??)
+                #PLOT MIXED DERIVATIVE, SEE IF NOISY, AND IF IT COULD BENEFIT FROM MOMENTUM SMOOTHING
+                layer_r.W = layer_r.W - alpha_i*layer_r.V - alpha_i*self.lamb_J*d2y_dWdx
+                
             else:
-                #without
+                #without regularization
                 layer_r.W = layer_r.W - alpha_i*layer_r.V
            
             #Nesterov momentum
