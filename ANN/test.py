@@ -1,35 +1,37 @@
-# scikit-learn k-fold cross-validation
-from numpy import array
-from sklearn.model_selection import KFold
-# data sample
-data = array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
-# prepare cross validation
-kfold = KFold(3, True, 1)
-# enumerate splits
-for train, test in kfold.split(data):
-	print('train: %s, test: %s' % (data[train], data[test]))
 
+diff = []    
 
-#plt.close('all')
-#
-#N = 1000
-#
-#x = np.linspace(0, 2*np.pi, N)
-#noise = np.random.randn(N)*0.1
-#y = np.cos(2*x) + noise
-#
-#plt.plot(x, y, 'bo', alpha=0.2)
-#
-#beta = 0.9
-#alpha = 0.001
-#
-#V = []
-#V.append(0.0)
-#
-#for i in range(1, N):
-#    #beta_i = beta*(1.0 - beta**i)
-#    beta_i = beta
-#    V_i = beta_i*V[i-1] + (1-beta_i)*y[i]
-#    V.append(V_i)
-#    
-#plt.plot(x[1:], V[1:], 'r')
+l = 2
+
+for j in range(11):
+    for i in np.arange(1e3):
+        idx = np.random.randint(0, ann.n_train, ann.batch_size)
+        
+        #
+        phi = 10**-(1+j)
+        ann.feed_forward(X[idx], batch_size = ann.batch_size)
+        dydX = ann.jacobian(X[idx], batch_size = ann.batch_size)
+        dydW = ann.layers[l].y_grad_W
+        X_hat = X[idx] + 2.0*phi*dydX.T
+        ann.feed_forward(X_hat, batch_size = ann.batch_size)
+        dydX2 = ann.jacobian(X_hat, batch_size = ann.batch_size)
+        #dydX_hat = ann.jacobian(X_hat, batch_size = ann.batch_size)
+        dydW_hat = ann.layers[l].y_grad_W
+        d2y_dWdX = (dydW_hat - dydW)/phi
+        
+        #
+        phi = 10**-(2+j)
+        ann.feed_forward(X[idx], batch_size = ann.batch_size)
+        dydX_test = ann.jacobian(X[idx], batch_size = ann.batch_size)
+        dydW_test = ann.layers[l].y_grad_W
+        X_hat_test = X[idx] + 2.0*phi*dydX_test.T
+        ann.feed_forward(X_hat_test, batch_size = ann.batch_size)
+        dydX2_test = ann.jacobian(X_hat_test, batch_size = ann.batch_size)
+        dydW_hat_test = ann.layers[l].y_grad_W
+        d2y_dWdX_test = (dydW_hat_test - dydW_test)/phi
+        
+        diff.append(np.linalg.norm(d2y_dWdX_test - d2y_dWdX, ord=np.inf)/np.linalg.norm(d2y_dWdX_test, ord=np.inf))
+    
+    plt.plot(diff)
+
+plt.yscale('log')

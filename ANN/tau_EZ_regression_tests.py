@@ -53,7 +53,7 @@ if on_gpu == True:
     X_train = cp.asarray(X_train)
     y_train = cp.asarray(y_train)
 
-ann = NN.ANN(X = X_train, y = y_train, alpha = 0.001, beta1 = 0.9, beta2=0.999, lamb_J = 5e-4, phi = 0.001, decay_rate = 0.9, \
+ann = NN.ANN(X = X_train, y = y_train, alpha = 0.001, beta1 = 0.9, beta2=0.999, lamb_J = 5e-5, phi = 1e-4, decay_rate = 0.9, \
              decay_step=10**5, n_layers = 4, n_neurons=64, activation = 'hard_tanh', \
              neuron_based_compute=False, batch_size=128, param_specific_learn_rate=True, on_gpu=on_gpu, name=name)
 
