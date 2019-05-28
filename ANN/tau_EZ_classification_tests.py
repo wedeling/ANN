@@ -76,7 +76,7 @@ ann.get_n_weights()
 
 ann.compute_misclass()
 t0 = time.time()
-ann.train(10000, store_loss=True, check_derivative=False)
+ann.train(1000, store_loss=True, check_derivative=False)
 t1 = time.time()
 
 print('===============================')
