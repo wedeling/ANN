@@ -509,6 +509,8 @@ for n in range(n_steps):
         #standardize by data mean and std if standardize flag was set to True during ann training
         X_feat = (X_feat - X_mean)/X_std
         
+        X_feat = X_feat.reshape([1, X_feat.size])
+        
         #feed forward of the neural net
         dE_tilde = dE_ann.feed_forward(X_feat)[0][0]
         dZ_tilde = dZ_ann.feed_forward(X_feat)[0][0]

@@ -18,7 +18,7 @@ plt.close('all')
 n_days = 365
 
 #get the data
-name = 'dE'
+name = 'dZ'
 X, y, t = tf.get_tau_EZ_regres(n_days, name)
 
 N = t.size
@@ -26,14 +26,14 @@ N = t.size
 #standardize the features and the data
 try:
     N_feat = X.shape[1]
-#    for i in range(N_feat):
-#        X[:,i] = (X[:,i] - np.mean(X[:,i]))/np.std(X[:,i])
+    for i in range(N_feat):
+        X[:,i] = (X[:,i] - np.mean(X[:,i]))/np.std(X[:,i])
 
 except IndexError:
     N_feat = 1
-#    X = (X - np.mean(X))/np.std(X) 
+    X = (X - np.mean(X))/np.std(X) 
     
-#y = (y - np.mean(y))/np.std(y)
+y = (y - np.mean(y))/np.std(y)
 
 #split the data into a training and a validation data set, if required
 
@@ -53,7 +53,7 @@ if on_gpu == True:
     X_train = cp.asarray(X_train)
     y_train = cp.asarray(y_train)
 
-ann = NN.ANN(X = X_train, y = y_train, alpha = 0.001, beta1 = 0.9, beta2=0.999, lamb_J = 5e-5, phi = 1e-4, decay_rate = 0.9, \
+ann = NN.ANN(X = X_train, y = y_train, alpha = 0.001, beta1 = 0.9, beta2=0.999, lamb_J = 5e-4, phi = 1e-3, decay_rate = 0.9, \
              decay_step=10**5, n_layers = 4, n_neurons=64, activation = 'hard_tanh', \
              neuron_based_compute=False, batch_size=128, param_specific_learn_rate=True, on_gpu=on_gpu, name=name)
 
@@ -64,7 +64,7 @@ ann.get_n_weights()
 ##############
 
 t0 = time.time()
-ann.train(10000, store_loss=True, check_derivative=False)
+ann.train(5000, store_loss=True, check_derivative=False)
 t1 = time.time()
 print(t1-t0) 
 
