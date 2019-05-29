@@ -344,6 +344,7 @@ state_store = False
 restart = True
 store = True
 plot = True
+on_the_fly = True
 eddy_forcing_type = 'ann_tau_ortho'
 
 ####################
@@ -394,11 +395,19 @@ if eddy_forcing_type == 'ann_tau_ortho':
     #NOTE: making the assumption here that both ANNs use the same features
     X_mean = dE_ann.X_mean
     X_std = dE_ann.X_std
+    
+    #number of featues
+    N_feat = dE_ann.N_in
 
     dE_mean = dE_ann.y_mean
     dE_std = dE_ann.y_std
     dZ_mean = dZ_ann.y_mean
     dZ_std = dZ_ann.y_std
+    
+    batch_size = 32
+    X_on_the_fly = np.zeros([batch_size, N_feat])
+    dE_on_the_fly = np.zeros(batch_size)
+    dZ_on_the_fly = np.zeros(batch_size)
 
 ##################
 
@@ -512,8 +521,8 @@ for n in range(n_steps):
         X_feat = X_feat.reshape([1, X_feat.size])
         
         #feed forward of the neural net
-        dE_tilde = dE_ann.feed_forward(X_feat)[0][0]
-        dZ_tilde = dZ_ann.feed_forward(X_feat)[0][0]
+        dE_tilde = dE_ann.feed_forward(X_feat.reshape([1, 8]))[0][0]
+        dZ_tilde = dZ_ann.feed_forward(X_feat.reshape([1, 8]))[0][0]
         
         #if standardize flag was True during ANN training
         dE_tilde = dE_tilde*dE_std + dE_mean
