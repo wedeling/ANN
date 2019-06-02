@@ -106,7 +106,7 @@ def get_tau_EZ_regres(n_days, name):
     
     #fname = HOME + '/samples/dE_dZ_training.hdf5'
     fname = HOME + '/samples/training_t_4495.1.hdf5'
-    
+    #fname = HOME + '/samples/tau_EZ_training_t_3170.0.hdf5'
     h5f = h5py.File(fname, 'r')
     
     QoI = list(h5f.keys())
@@ -122,22 +122,22 @@ def get_tau_EZ_regres(n_days, name):
     sub = 1
     
     if name == 'dE':
-        y = h5f['e_n_HF'][0:N:sub] - h5f['e_n_LF'][0:N:sub]
+        y = h5f['e_n_HF'][1:N:sub] - h5f['e_n_LF'][1:N:sub]
     else:
-        y = h5f['z_n_HF'][0:N:sub] - h5f['z_n_LF'][0:N:sub]
+        y = h5f['z_n_HF'][1:N:sub] - h5f['z_n_LF'][1:N:sub]
     
     N_feat = 8
     X = np.zeros([y.size, N_feat])
-    X[:, 0] = h5f['z_n_LF'][0:N:sub]
-    X[:, 1] = h5f['e_n_LF'][0:N:sub]
-    X[:, 2] = h5f['u_n_LF'][0:N:sub]
-    X[:, 3] = h5f['s_n_LF'][0:N:sub]
-    X[:, 4] = h5f['v_n_LF'][0:N:sub]
-    X[:, 5] = h5f['o_n_LF'][0:N:sub]
-    X[:, 6] = h5f['sprime_n_LF'][0:N:sub]
-    X[:, 7] = h5f['zprime_n_LF'][0:N:sub]
+    X[:, 0] = h5f['z_n_LF'][0:N-1:sub]
+    X[:, 1] = h5f['e_n_LF'][0:N-1:sub]
+    X[:, 2] = h5f['u_n_LF'][0:N-1:sub]
+    X[:, 3] = h5f['s_n_LF'][0:N-1:sub]
+    X[:, 4] = h5f['v_n_LF'][0:N-1:sub]
+    X[:, 5] = h5f['o_n_LF'][0:N-1:sub]
+    X[:, 6] = h5f['tau_E'][0:N-1:sub]*h5f['sprime_n_LF'][0:N-1:sub]
+    X[:, 7] = h5f['tau_Z'][0:N-1:sub]*h5f['zprime_n_LF'][0:N-1:sub]
     
-    t = h5f['t'][0:N:sub]
+    t = h5f['t'][0:N-1:sub]
     
     return X, y, t
 

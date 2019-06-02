@@ -201,15 +201,15 @@ class ANN:
             self.layers[i].back_prop(y_i)
 
     #update step of the weights
-    def batch(self, X_i, y_i, alpha, beta1, beta2, t):
+    def batch(self, X_i, y_i, alpha=0.001, beta1=0.9, beta2=0.999, t=0):
         
         self.feed_forward(X_i, self.batch_size)
         self.back_prop(y_i)
 
         #if Jacobian regularization is used
-        #if self.phi > 0.0:
-        self.jacobian(X_i, batch_size=self.batch_size)
-        self.test.append(np.linalg.norm(self.layers[0].delta_hy)**2)
+        if self.phi > 0.0:
+            self.jacobian(X_i, batch_size=self.batch_size)
+            self.test.append(np.linalg.norm(self.layers[0].delta_hy)**2)
         
         for r in range(1, self.n_layers+1):
 
@@ -285,7 +285,7 @@ class ANN:
             alpha = self.alpha*self.decay_rate**(np.int(i/self.decay_step))
 
             #run the batch
-            self.batch(self.X[rand_idx], self.y[rand_idx], alpha, self.beta1, self.beta2, i+1)
+            self.batch(self.X[rand_idx], self.y[rand_idx], alpha=alpha, beta1=self.beta1, beta2=self.beta2, t=i+1)
             
             if check_derivative == True and np.mod(i, 1000) == 0:
                 self.check_derivative(self.X[rand_idx], self.y[rand_idx], 10)
@@ -337,6 +337,13 @@ class ANN:
         file = open(path + name + '.pickle', 'rb')
         self.__dict__ = pickle.load(file)
         file.close()
+        
+    def set_batch_size(self, batch_size):
+        
+        self.batch_size = batch_size
+        
+        for i in range(self.n_layers+1):
+            self.layers[i].batch_size = batch_size
 
     #compare a random back propagation derivative with a finite-difference approximation
     def check_derivative(self, X_i, y_i, n_checks):

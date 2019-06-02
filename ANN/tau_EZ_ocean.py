@@ -1,8 +1,7 @@
-"""
-*************************
-* S U B R O U T I N E S *
-*************************
-"""
+
+##########################
+# S U B R O U T I N E S  #
+##########################
 
 #pseudo-spectral technique to solve for Fourier coefs of Jacobian
 def compute_VgradW_hat(w_hat_n, P):
@@ -52,19 +51,6 @@ def get_P(cutoff):
                 
     return P
 
-#compute spectral filter
-def get_P_full(cutoff):
-
-    P = np.ones([N, N])
-
-    for i in range(N):
-        for j in range(N):
-
-            if np.abs(kx_full[i, j]) > cutoff or np.abs(ky_full[i, j]) > cutoff:
-                P[i, j] = 0.0
-
-    return P
-
 #store samples in hierarchical data format, when sample size become very large
 def store_samples_hdf5():
   
@@ -85,179 +71,164 @@ def store_samples_hdf5():
     h5f.close()    
 
 def draw_2w():
-    plt.subplot(121, title=r'$Q_1\; ' + r't = '+ str(np.around(t/day, 2)) + '\;[days]$')
-    #plt.contourf(x, y, w_np1_HF, 100)
-    plt.plot(T, DE)
-    plt.plot(T, DE_ANN)
-    #plt.colorbar()
-    plt.subplot(122,title=r'$Q_2$')
-    #plt.contourf(x, y, w_np1_LF, 100)
-#    plt.plot(T, DE_ANN)
-    #plt.colorbar()
+    plt.subplot(121)
+    plt.contourf(x, y, w_np1_LF, 100)
+    plt.subplot(122)
+    plt.contourf(x, y, EF, 100)
     plt.tight_layout()
+
+#return the fourier coefs of the stream function
+def get_psi_hat(w_hat_n):
+
+    psi_hat_n = w_hat_n/k_squared_no_zero
+    psi_hat_n[0,0] = 0.0
+
+    return psi_hat_n
+
+###############################
+# DATA-DRIVEN TAU SUBROUTINES #
+###############################
+
+def get_data_driven_tau_src_EZ(w_hat_n_LF, w_hat_n_HF, P, tau_max_E, tau_max_Z):
     
-def draw_stats():
-    plt.subplot(121, xlabel=r't')
-    plt.plot(T, energy_HF, label=r'$E^{HF}$')
-    plt.plot(T, energy_LF, label=r'$E^{LF}$')
-    plt.legend(loc=0)
-    plt.subplot(122, xlabel=r't')
-    plt.plot(T, enstrophy_HF, label=r'$Z^{HF}$')
-    plt.plot(T, enstrophy_LF, label=r'$Z^{LF}$')
-    plt.legend(loc=0)
-    plt.tight_layout()
+    E_LF, Z_LF, S_LF = get_EZS(w_hat_n_LF)
+
+    src_E = E_LF**2/Z_LF - S_LF
+    src_Z = -E_LF**2/S_LF + Z_LF
+
+    E_HF = compute_E(P*w_hat_n_HF)
+    Z_HF = compute_Z(P*w_hat_n_HF)
+
+    dE = (E_HF - E_LF)#/E_LF
+    dZ = (Z_HF - Z_LF)#/Z_LF
+
+    tau_E = tau_max_E*np.tanh(dE/E_LF)*np.sign(src_E)
+    tau_Z = tau_max_Z*np.tanh(dZ/Z_LF)*np.sign(src_Z)
     
-#compute the spatial correlation coeffient at a given time
-def spatial_corr_coef(X, Y):
-    return np.mean((X - np.mean(X))*(Y - np.mean(Y)))/(np.std(X)*np.std(Y))
-   
-#compute the energy and enstrophy at t_n
-def compute_ZE(w_hat_n, verbose=True):
+    return tau_E, tau_Z, dE, dZ
 
-    #compute stats using Fourier coefficients - is faster
-    #convert rfft2 coefficients to fft2 coefficients
-    w_hat_full = np.zeros([N, N]) + 0.0j
-    w_hat_full[0:N, 0:int(N/2+1)] = w_hat_n
-    w_hat_full[map_I, map_J] = np.conjugate(w_hat_n[I, J])
-    w_hat_full *= P_full
+def get_surrogate_tau_src_EZ(w_hat_n_LF, r, tau_max_E, tau_max_Z):
     
-    #compute Fourier coefficients of stream function
-    psi_hat_full = w_hat_full/k_squared_no_zero_full
-    psi_hat_full[0,0] = 0.0
+    E_LF, Z_LF, S_LF = get_EZS(w_hat_n_LF)
 
-    #compute energy and enstrophy (density)
-    Z = 0.5*np.sum(w_hat_full*np.conjugate(w_hat_full))/N**4
-    E = -0.5*np.sum(psi_hat_full*np.conjugate(w_hat_full))/N**4
+    src_E = E_LF**2/Z_LF - S_LF
+    src_Z = -E_LF**2/S_LF + Z_LF
 
-    if verbose:
-        #print 'Energy = ', E, ', enstrophy = ', Z
-        print('Z = ', Z.real, ', E = ', E.real)
+    dE = r['dE'] 
+    dZ = r['dZ']
 
-    return Z.real, E.real
-
-#compute all QoI at t_n
-def compute_qoi(w_hat_n, verbose=True):
-
-    #compute stats using Fourier coefficients - is faster
-    #convert rfft2 coefficients to fft2 coefficients
-    w_hat_full = np.zeros([N, N]) + 0.0j
-    w_hat_full[0:N, 0:int(N/2+1)] = w_hat_n
-    w_hat_full[map_I, map_J] = np.conjugate(w_hat_n[I, J])
-    w_hat_full *= P_full
+    tau_E = tau_max_E*np.tanh(dE/E_LF)*np.sign(src_E)
+    tau_Z = tau_max_Z*np.tanh(dZ/Z_LF)*np.sign(src_Z)
     
-    #compute Fourier coefficients of stream function
-    psi_hat_full = w_hat_full/k_squared_no_zero_full
-    psi_hat_full[0,0] = 0.0
+    return tau_E, tau_Z
 
-    #compute energy and enstrophy (density)
-    Z = 0.5*np.sum(w_hat_full*np.conjugate(w_hat_full))/N**4
-    E = -0.5*np.sum(psi_hat_full*np.conjugate(w_hat_full))/N**4
-    U = 0.5*np.sum(psi_hat_full*np.conjugate(F_hat_full))/N**4
-    S = 0.5*np.sum(psi_hat_full*np.conjugate(psi_hat_full))/N**4
-    O = 0.5*np.sum(k_squared_full*w_hat_full*np.conjugate(w_hat_full))/N**4
-    V = 0.5*np.sum(w_hat_full*np.conjugate(F_hat_full))/N**4
+def get_EZS(w_hat_n):
 
-    Sprime = E**2/Z - S
-    Zprime = Z - E**2/S
+    psi_hat_n = w_hat_n/k_squared_no_zero
+    psi_hat_n[0,0] = 0.0
+    psi_n = np.fft.irfft2(psi_hat_n)
+    w_n = np.fft.irfft2(w_hat_n)
+    
+    e_n = -0.5*psi_n*w_n
+    z_n = 0.5*w_n**2
+    s_n = 0.5*psi_n**2 
 
-    if verbose:
-        #print 'Energy = ', E, ', enstrophy = ', Z
-        print('Z = ', Z.real, ', E = ', E.real)
-        print('U = ', U.real, ', S = ', S.real)
-        print('V = ', V.real, ', O = ', O.real)
-        print('Sprime = ', Sprime.real, ', Zprime = ', Zprime.real)
+    E = simps(simps(e_n, axis), axis)/(2*np.pi)**2
+    Z = simps(simps(z_n, axis), axis)/(2*np.pi)**2
+    S = simps(simps(s_n, axis), axis)/(2*np.pi)**2
 
-    return Z.real, E.real, U.real, S.real, V.real, O.real, Sprime.real, Zprime.real
+    return E, Z, S
+
+#compute the energy at t_n
+def compute_E(w_hat_n):
+    
+    psi_hat_n = w_hat_n/k_squared_no_zero
+    psi_hat_n[0,0] = 0.0
+    psi_n = np.fft.irfft2(psi_hat_n)
+    w_n = np.fft.irfft2(w_hat_n)
+    
+    e_n = -0.5*psi_n*w_n
+
+    E = simps(simps(e_n, axis), axis)/(2*np.pi)**2
+    
+    return E
+
+#compute the enstrophy at t_n
+def compute_Z(w_hat_n):
+    
+    w_n = np.fft.irfft2(w_hat_n)
+    
+    z_n = 0.5*w_n**2
+
+    Z = simps(simps(z_n, axis), axis)/(2*np.pi)**2
+    
+    return Z
 
 #######################
 # ORTHOGONAL PATTERNS #
 #######################
 
 def get_psi_hat_prime(w_hat_n):
-
-    #stream function
+    
     psi_hat_n = w_hat_n/k_squared_no_zero
     psi_hat_n[0, 0] = 0.
-    
-    #compute stats using Fourier coefficients - is faster
-    #convert rfft2 coefficients to fft2 coefficients
-    w_hat_full = np.zeros([N, N]) + 0.0j
-    w_hat_full[0:N, 0:int(N/2+1)] = w_hat_n
-    w_hat_full[map_I, map_J] = np.conjugate(w_hat_n[I, J])
-    w_hat_full *= P_full
-    
-    #compute Fourier coefficients of stream function
-    psi_hat_full = w_hat_full/k_squared_no_zero_full
-    psi_hat_full[0,0] = 0.0
 
-#same, but integral compute using Simpson's rule
-#    psi_n = np.fft.irfft2(psi_hat_n)
-#    w_n = np.fft.irfft2(w_hat_n)
-#
-#    nom = simps(simps(w_n*psi_n, axis), axis)
-#    denom = simps(simps(w_n*w_n, axis), axis)
+    psi_n = np.fft.irfft2(psi_hat_n)
+    w_n = np.fft.irfft2(w_hat_n)
 
-    #compute integrals directly from Fourier coefficients
-    nom = np.sum(w_hat_full*np.conjugate(psi_hat_full))/N**4
-    denom = np.sum(w_hat_full*np.conjugate(w_hat_full))/N**4
+    nom = simps(simps(w_n*psi_n, axis), axis)
+    denom = simps(simps(w_n*w_n, axis), axis)
 
     return psi_hat_n - nom/denom*w_hat_n
 
 def get_w_hat_prime(w_hat_n):
     
-    #stream function
     psi_hat_n = w_hat_n/k_squared_no_zero
     psi_hat_n[0, 0] = 0.
 
-    #compute stats using Fourier coefficients - is faster
-    #convert rfft2 coefficients to fft2 coefficients
-    w_hat_full = np.zeros([N, N]) + 0.0j
-    w_hat_full[0:N, 0:int(N/2+1)] = w_hat_n
-    w_hat_full[map_I, map_J] = np.conjugate(w_hat_n[I, J])
-    w_hat_full *= P_full
-    
-    #compute Fourier coefficients of stream function
-    psi_hat_full = w_hat_full/k_squared_no_zero_full
-    psi_hat_full[0,0] = 0.0
+    psi_n = np.fft.irfft2(psi_hat_n)
+    w_n = np.fft.irfft2(w_hat_n)
 
-#same, but integral compute using Simpson's rule
-#    psi_n = np.fft.irfft2(psi_hat_n)
-#    w_n = np.fft.irfft2(w_hat_n)
-#
-#    nom = simps(simps(w_n*psi_n, axis), axis)
-#    denom = simps(simps(psi_n*psi_n, axis), axis)
+    nom = simps(simps(w_n*psi_n, axis), axis)
+    denom = simps(simps(psi_n*psi_n, axis), axis)
 
-    nom = np.sum(w_hat_full*np.conjugate(psi_hat_full))/N**4
-    denom = np.sum(psi_hat_full*np.conjugate(psi_hat_full))/N**4
-    
     return w_hat_n - nom/denom*psi_hat_n
 
-"""
-***************************
-* M A I N   P R O G R A M *
-***************************
-"""
+#compute the (temporal) correlation coeffient 
+def corr_coef(X, Y):
+    return np.mean((X - np.mean(X))*(Y - np.mean(Y)))/(np.std(X)*np.std(Y))
+
+
+###########################
+# M A I N   P R O G R A M #
+###########################
 
 import numpy as np
 import matplotlib.pyplot as plt
 import os
 import h5py
 from scipy.integrate import simps
-from drawnow import drawnow
-from base import NN
+from itertools import combinations, chain
+import sys
+import json
+#from drawnow import drawnow
 
 plt.close('all')
 plt.rcParams['image.cmap'] = 'seismic'
 
 HOME = os.path.abspath(os.path.dirname(__file__))
 
+plt.close('all')
+plt.rcParams['image.cmap'] = 'seismic'
+
 #number of gridpoints in 1D
-N = 2**7
+I = 7
+N = 2**I
 
 #2D grid
 h = 2*np.pi/N
-#axis = h*np.arange(1, N+1)
-axis = np.linspace(0.0, 2.0*np.pi, N)
+axis = h*np.arange(1, N+1)
+axis = np.linspace(0, 2.0*np.pi, N)
 [x , y] = np.meshgrid(axis , axis)
 
 #frequencies
@@ -275,38 +246,14 @@ k_squared = kx**2 + ky**2
 k_squared_no_zero = np.copy(k_squared)
 k_squared_no_zero[0,0] = 1.0
 
-kx_full = np.zeros([N, N]) + 0.0j
-ky_full = np.zeros([N, N]) + 0.0j
-
-for i in range(N):
-    for j in range(N):
-        kx_full[i, j] = 1j*k[j]
-        ky_full[i, j] = 1j*k[i]
-
-k_squared_full = kx_full**2 + ky_full**2
-k_squared_no_zero_full = np.copy(k_squared_full)
-k_squared_no_zero_full[0,0] = 1.0
-
 #cutoff in pseudospectral method
 Ncutoff = N/3
-Ncutoff_LF = 2**6/3 
+Ncutoff_LF = 2**(I-1)/3 
 
-#spectral filter for the real FFT2
+#spectral filter
 P = get_P(Ncutoff)
 P_LF = get_P(Ncutoff_LF)
 P_U = P - P_LF
-
-#spectral filter for the full FFT2 (used in compute_E_Z)
-P_full = get_P_full(Ncutoff_LF)
-
-#map from the rfft2 coefficient indices to fft2 coefficient indices
-#Use: see compute_E_Z subroutine
-shift = np.zeros(N).astype('int')
-for i in range(1,N):
-    shift[i] = np.int(N-i)
-I = range(N);J = range(np.int(N/2+1))
-map_I, map_J = np.meshgrid(shift[I], shift[J])
-I, J = np.meshgrid(I, J)
 
 #time scale
 Omega = 7.292*10**-5
@@ -316,16 +263,12 @@ day = 24*60**2*Omega
 decay_time_nu = 5.0
 decay_time_mu = 90.0
 nu = 1.0/(day*Ncutoff**2*decay_time_nu)
-#nu_LF = 1.0/(day*Ncutoff_LF**2*decay_time_nu)
 nu_LF = 1.0/(day*Ncutoff**2*decay_time_nu)
 mu = 1.0/(day*decay_time_mu)
 
-#start, end time (in days) + time step
+#start, end time, end time of data (training period), time step
 t = 250.0*day
-t_end = (t + 8.0*365)*day
-#t_end = 251.0*day
-
-#time step
+t_end = t + 8*365*day
 dt = 0.01
 n_steps = np.ceil((t_end-t)/dt).astype('int')
 
@@ -333,29 +276,62 @@ n_steps = np.ceil((t_end-t)/dt).astype('int')
 # USER KEYS #
 #############
 
-sim_ID = 'ANN'
-store_ID = 'T2'
-plot_frame_rate = np.floor(1.0*day/dt).astype('int')
-#store_frame_rate = np.floor(0.5*day/dt).astype('int')
+#simulation name
+sim_ID = 'tau_EZ'
+#framerate of storing data, plotting results, computing correlations (1 = every integration time step)
 store_frame_rate = 1
+plot_frame_rate = np.floor(1.0*day/dt).astype('int')
+corr_frame_rate = np.floor(0.25*day/dt).astype('int')
+#length of data array
 S = np.floor(n_steps/store_frame_rate).astype('int')
 
-state_store = False
-restart = True
-store = True
-plot = True
-on_the_fly = True
-eddy_forcing_type = 'ann_tau_ortho'
+#user-specified parameter of tau_E and tau_Z terms
+tau_E_max = 1.0
+tau_Z_max = 1.0
 
-####################
-# STORE PARAMETERS #
-####################
+#read flags from input file
+fpath = sys.argv[1]
+fp = open(fpath, 'r')
+N_surr = int(fp.readline())
+inputs = []
+
+flags = json.loads(fp.readline())
+print('*********************')
+print('Simulation flags')
+print('*********************')
+
+for key in flags.keys():
+    vars()[key] = flags[key]
+    print(key, '=', flags[key])
+
+print('*********************')
+
+##Manual specification of flags 
+#state_store = True      #store the state at the end
+#restart = False         #restart from prev state
+#store = False           #store data
+#plot = True             #plot results while running, requires drawnow package
+#compute_ref = True      #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
+#
+#eddy_forcing_type = 'tau_ortho'  #which eddy forcing to use (binned, tau_ortho, exact, unparam)
+#input_file = 'manual'
+
+store_ID = sim_ID + '_' + input_file 
+
+###############################
+# SPECIFY WHICH DATA TO STORE #
+###############################
 
 #QoI to store, First letter in caps implies an NxN field, otherwise a scalar 
+
+#TRAINING DATA SET
 QoI = ['z_n_HF', 'e_n_HF', \
        'z_n_LF', 'e_n_LF', 'u_n_LF', 's_n_LF', 'v_n_LF', 'o_n_LF', \
        'sprime_n_LF', 'zprime_n_LF', \
        'tau_E', 'tau_Z', 't']
+
+#PREDICTION DATA SET
+#QoI = ['z_n_LF', 'e_n_LF', 't']
 
 Q = len(QoI)
 
@@ -370,51 +346,14 @@ if store == True:
         
         #a field
         if QoI[q][0].isupper():
-            #samples[QoI[q]] = np.zeros([S, N, N/2+1]) + 0.0j
-            samples[QoI[q]] = np.zeros([S, N, N])
+            samples[QoI[q]] = np.zeros([S, N, int(N/2+1)]) + 0.0j
         #a scalar
         else:
             samples[QoI[q]] = np.zeros(S)
 
-##################       
-# ANN PARAMETERS #
-##################
-
-if eddy_forcing_type == 'ann_tau_ortho':
-
-    #create empty ANN object
-    dE_ann = NN.ANN(X = np.zeros(10), y = np.zeros(1), standardize = False)
-    #load trained ann
-    dE_ann.load_ANN(name='dE')
-
-    #create empty ANN object
-    dZ_ann = NN.ANN(X = np.zeros(10), y = np.zeros(1), standardize = False)
-    #load trained ann
-    dZ_ann.load_ANN(name='dZ')
-    
-    #NOTE: making the assumption here that both ANNs use the same features
-    X_mean = dE_ann.X_mean
-    X_std = dE_ann.X_std
-    
-    #number of featues
-    N_feat = dE_ann.N_in
-
-    dE_mean = dE_ann.y_mean
-    dE_std = dE_ann.y_std
-    dZ_mean = dZ_ann.y_mean
-    dZ_std = dZ_ann.y_std
-    
-    batch_size = 32
-    X_on_the_fly = np.zeros([batch_size, N_feat])
-    dE_on_the_fly = np.zeros(batch_size)
-    dZ_on_the_fly = np.zeros(batch_size)
-
-##################
-
 #forcing term
-F = 2**1.5*np.cos(5*x)*np.cos(5*y)
-F_hat = np.fft.rfft2(F)
-F_hat_full = np.fft.fft2(F)
+F = 2**1.5*np.cos(5*x)*np.cos(5*y);
+F_hat = np.fft.rfft2(F);
 
 if restart == True:
     
@@ -428,7 +367,7 @@ if restart == True:
         vars()[key] = h5f[key][:]
         
     h5f.close()
-   
+
 else:
     
     #initial condition
@@ -448,151 +387,115 @@ else:
     
     VgradW_hat_n_LF = compute_VgradW_hat(w_hat_n_LF, P_LF)
     VgradW_hat_nm1_LF = np.copy(VgradW_hat_n_LF)
-    
+
 #constant factor that appears in AB/BDI2 time stepping scheme   
-norm_factor = 1.0/(3.0/(2.0*dt) - nu*k_squared + mu)
-norm_factor_LF = 1.0/(3.0/(2.0*dt) - nu_LF*k_squared + mu)
+norm_factor = 1.0/(3.0/(2.0*dt) - nu*k_squared + mu)        #for reference solution
+norm_factor_LF = 1.0/(3.0/(2.0*dt) - nu_LF*k_squared + mu)  #for Low-Fidelity (LF) or resolved solution
 
-j = 0; j2 = 0; idx = 0
-
-if plot == True:
-    plt.figure()
-    energy_HF = []; energy_LF = []; enstrophy_HF = []; enstrophy_LF = []; T = []
-    #TEST: REMOVE LATER
-    DE = []; DE_ANN = []
+#some counters
+j = 0; j2 = 0; idx = 0;
 
 #time loop
-for n in range(n_steps):    
+for n in range(n_steps):
     
-    #solve for next time step
-    w_hat_np1_HF, VgradW_hat_n_HF = get_w_hat_np1(w_hat_n_HF, w_hat_nm1_HF, VgradW_hat_nm1_HF, P, norm_factor)
-  
-    #exact eddy forcing
-    EF_hat_nm1_exact = P_LF*VgradW_hat_nm1_HF - VgradW_hat_nm1_LF
+    #orthogonal patterns
+    psi_hat_n_prime = get_psi_hat_prime(w_hat_n_LF)
+    w_hat_n_prime = get_w_hat_prime(w_hat_n_LF)
 
-    #EXACT eddy forcing (for reference)
-    if eddy_forcing_type == 'exact':
-        EF_hat = EF_hat_nm1_exact
+    if compute_ref == True:
         
-    #exact orthogonal pattern forcing
-    elif eddy_forcing_type == 'tau_ortho':
+        #solve for next time step
+        w_hat_np1_HF, VgradW_hat_n_HF = get_w_hat_np1(w_hat_n_HF, w_hat_nm1_HF, VgradW_hat_nm1_HF, P, norm_factor)
         
-        z_n_HF, e_n_HF = compute_ZE(P_LF*w_hat_n_HF, verbose=False)
-        z_n_LF, e_n_LF, u_n_LF, s_n_LF, v_n_LF, o_n_LF, sprime_n_LF, zprime_n_LF = compute_qoi(w_hat_n_LF, verbose=False)
+        #exact eddy forcing
+        EF_hat_nm1_exact = P_LF*VgradW_hat_nm1_HF - VgradW_hat_nm1_LF 
+ 
+        #exact tau_E and tau_Z
+        tau_E, tau_Z, dE, dZ = get_data_driven_tau_src_EZ(w_hat_n_LF, w_hat_n_HF, P_LF, tau_E_max, tau_Z_max)
     
-        src_E = e_n_LF**2/z_n_LF - s_n_LF
-        src_Z = -e_n_LF**2/s_n_LF + z_n_LF
-    
-        dE = e_n_HF - e_n_LF
-        dZ = z_n_HF - z_n_LF
+        #E & Z tracking eddy forcing
+        EF_hat_n_ortho = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime 
 
-        #inverse unclosed time scales
-        tau_E = np.tanh(dE/e_n_LF)*np.sign(src_E)
-        tau_Z = np.tanh(dZ/z_n_LF)*np.sign(src_Z)
-        
-        #orthogonal patterns
-        psi_hat_n_prime = get_psi_hat_prime(w_hat_n_LF)
-        w_hat_n_prime = get_w_hat_prime(w_hat_n_LF)
+        #reference energy and enstrophy
+        e_n_HF, z_n_HF, _ = get_EZS(P_LF*w_hat_n_HF)
 
-        #reduced model-error source term
-        EF_hat = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime 
-        
-    #ANN surrogate of the orthogonal pattern forcing
-    elif eddy_forcing_type == 'ann_tau_ortho':
+    #######################################
+    # covariates (conditioning variables) #
+    #######################################
+    e_n_LF, z_n_LF, s_n_LF = get_EZS(w_hat_n_LF)
+    psi_n_LF = np.fft.irfft2(get_psi_hat(w_hat_n_LF))
+    u_n_LF = 0.5*simps(simps(psi_n_LF*F, axis), axis)/(2.0*np.pi)**2
+    w_n_LF = np.fft.irfft2(w_hat_n_LF)
+    v_n_LF = 0.5*simps(simps(w_n_LF*F, axis), axis)/(2.0*np.pi)**2
+    nabla2_w_n_LF = np.fft.irfft2(k_squared*w_hat_n_LF)
+    o_n_LF = 0.5*simps(simps(nabla2_w_n_LF*w_n_LF, axis), axis)/(2.0*np.pi)**2
 
-        #compute features
-        z_n_LF, e_n_LF, u_n_LF, s_n_LF, v_n_LF, o_n_LF, sprime_n_LF, zprime_n_LF = compute_qoi(w_hat_n_LF, verbose=False)
-    
-        #source terms of the E and Z ODEs
-        src_E = e_n_LF**2/z_n_LF - s_n_LF
-        src_Z = -e_n_LF**2/s_n_LF + z_n_LF
+    #compute S' and Z'
+    sprime_n_LF = e_n_LF**2/z_n_LF - s_n_LF
+    zprime_n_LF = z_n_LF - e_n_LF**2/s_n_LF
 
-        #EXACT dE and dZ, leave uncommented for one-way coupled simulations
-        z_n_HF, e_n_HF = compute_ZE(P_LF*w_hat_n_HF, verbose=False)
-#        dE_tilde = e_n_HF - e_n_LF
-#        dZ_tilde = z_n_HF - z_n_LF
+    ##############
 
-        #features
-        X_feat = np.array([z_n_LF, e_n_LF, u_n_LF, s_n_LF, v_n_LF, o_n_LF, sprime_n_LF, zprime_n_LF])
-        
-        #standardize by data mean and std if standardize flag was set to True during ann training
-        X_feat = (X_feat - X_mean)/X_std
-        
-        X_feat = X_feat.reshape([1, X_feat.size])
-        
-        #feed forward of the neural net
-        dE_tilde = dE_ann.feed_forward(X_feat.reshape([1, 8]))[0][0]
-        dZ_tilde = dZ_ann.feed_forward(X_feat.reshape([1, 8]))[0][0]
-        
-        #if standardize flag was True during ANN training
-        dE_tilde = dE_tilde*dE_std + dE_mean
-        dZ_tilde = dZ_tilde*dZ_std + dZ_mean
-
-        #inverse unclosed time scales
-        tau_E = np.tanh(dE_tilde/e_n_LF)*np.sign(src_E)
-        tau_Z = np.tanh(dZ_tilde/z_n_LF)*np.sign(src_Z)
-        
-        #orthogonal patterns
-        psi_hat_n_prime = get_psi_hat_prime(w_hat_n_LF)
-        w_hat_n_prime = get_w_hat_prime(w_hat_n_LF)
-
-        #reduced model-error source term
-        EF_hat = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime 
-        
-    #NO eddy forcing
+    #exact orthogonal pattern surrogate
+    if eddy_forcing_type == 'tau_ortho':
+        EF_hat = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime
+    #unparameterized solution
     elif eddy_forcing_type == 'unparam':
         EF_hat = np.zeros([N, int(N/2+1)])
-
-    #resolved model run
-    w_hat_np1_LF, VgradW_hat_n_LF = get_w_hat_np1(w_hat_n_LF, w_hat_nm1_LF, VgradW_hat_nm1_LF, P_LF, norm_factor_LF, EF_hat)
+    #exact, full-field eddy forcing
+    elif eddy_forcing_type == 'exact':
+        EF_hat = EF_hat_nm1_exact
+    else:
+        print('No valid eddy_forcing_type selected')
+        import sys; sys.exit()
    
-    #plot results to screen during iteration
+    #########################
+    #LF solve
+    w_hat_np1_LF, VgradW_hat_n_LF = get_w_hat_np1(w_hat_n_LF, w_hat_nm1_LF, VgradW_hat_nm1_LF, P_LF, norm_factor_LF, EF_hat)
+
+    t += dt
+    j += 1
+    j2 += 1
+   
+    #plot solution every plot_frame_rate. Requires drawnow() package
     if j == plot_frame_rate and plot == True:
         j = 0
-        
-        #HF and LF vorticities
-        w_np1_HF = np.fft.irfft2(P_LF*w_hat_np1_HF)
+
         w_np1_LF = np.fft.irfft2(w_hat_np1_LF)
-
-        #compute stats
-        Z_HF, E_HF = compute_ZE(P_LF*w_hat_np1_HF)
-        Z_LF, E_LF, U_LF, S_LF, V_LF, O_LF, Sprime_LF, Zprime_LF = compute_qoi(w_hat_np1_LF)
-        print('------------------')
+        EF = np.fft.irfft2(EF_hat)
         
-        energy_HF.append(E_HF); energy_LF.append(E_LF)
-        enstrophy_HF.append(Z_HF); enstrophy_LF.append(Z_LF)
-        T.append(t)
+        e_n_HF, z_n_HF, s_n_HF = get_EZS(P_LF*w_hat_n_HF)
+        e_n_LF, z_n_LF, s_n_LF = get_EZS(w_hat_n_LF)
+        
+        print('e_n_HF: %.4f' % e_n_HF, 'z_n_HF: %.4f' % z_n_HF, 's_n_HF: %.4f' % s_n_HF)
+        print('e_n_LF: %.4f' % e_n_LF, 'z_n_LF: %.4f' % z_n_LF, 's_n_LF: %.4f' % s_n_LF)
 
-        drawnow(draw_stats)
         #drawnow(draw_2w)
         
     #store samples to dict
     if j2 == store_frame_rate and store == True:
         j2 = 0
-                
+        
         if np.mod(n, np.round(day/dt)) == 0:
-            print('n =', n, 'of', n_steps)
-            
+            print('n = ', n, ' of ', n_steps)
+
         for qoi in QoI:
-            samples[qoi][idx] = eval(qoi)        
-        
-        samples['t'][idx] = t
-        
+            samples[qoi][idx] = eval(qoi)
+
         idx += 1  
-        
+
     #update variables
-    w_hat_nm1_HF = np.copy(w_hat_n_HF)
-    w_hat_n_HF = np.copy(w_hat_np1_HF)
-    VgradW_hat_nm1_HF = np.copy(VgradW_hat_n_HF)
+    if compute_ref == True: 
+        w_hat_nm1_HF = np.copy(w_hat_n_HF)
+        w_hat_n_HF = np.copy(w_hat_np1_HF)
+        VgradW_hat_nm1_HF = np.copy(VgradW_hat_n_HF)
 
     w_hat_nm1_LF = np.copy(w_hat_n_LF)
     w_hat_n_LF = np.copy(w_hat_np1_LF)
     VgradW_hat_nm1_LF = np.copy(VgradW_hat_n_LF)
     
-    t += dt
-    j += 1
-    j2 += 1
-    
+####################################
+
 #store the state of the system to allow for a simulation restart at t > 0
 if state_store == True:
     
@@ -615,6 +518,8 @@ if state_store == True:
         h5f.create_dataset(key, data = qoi)
         
     h5f.close()   
+
+####################################
 
 #store the samples
 if store == True:
