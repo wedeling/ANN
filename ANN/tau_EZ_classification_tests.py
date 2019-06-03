@@ -1,11 +1,7 @@
-"""
-TEST THE ANN CLASS ON A REAL REGRESSION PROBLEM
-"""
-
 import numpy as np
 import matplotlib.pyplot as plt
 from base import NN
-import cupy as cp
+#import cupy as cp
 import test_functions as tf
 import time
 
@@ -19,7 +15,7 @@ plt.close('all')
 n_days = 365
 
 #get the data
-X, y, t = tf.get_tau_EZ_regres(n_days)
+X, y, t = tf.get_tau_EZ_regres(n_days, 'dE')
 
 N = t.size
 

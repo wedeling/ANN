@@ -1,37 +1,46 @@
+def get_kde(X, N_points = 100):
 
-diff = []    
+    kernel = stats.gaussian_kde(X)
+    x = np.linspace(np.min(X), np.max(X), N_points)
+    pde = kernel.evaluate(x)
+    return x, pde
 
-l = 2
+import numpy as np
+import matplotlib.pyplot as plt
+import test_functions as tf
+from scipy import stats
 
-for j in range(11):
-    for i in np.arange(1e3):
-        idx = np.random.randint(0, ann.n_train, ann.batch_size)
-        
-        #
-        phi = 10**-(1+j)
-        ann.feed_forward(X[idx], batch_size = ann.batch_size)
-        dydX = ann.jacobian(X[idx], batch_size = ann.batch_size)
-        dydW = ann.layers[l].y_grad_W
-        X_hat = X[idx] + 2.0*phi*dydX.T
-        ann.feed_forward(X_hat, batch_size = ann.batch_size)
-        dydX2 = ann.jacobian(X_hat, batch_size = ann.batch_size)
-        #dydX_hat = ann.jacobian(X_hat, batch_size = ann.batch_size)
-        dydW_hat = ann.layers[l].y_grad_W
-        d2y_dWdX = (dydW_hat - dydW)/phi
-        
-        #
-        phi = 10**-(2+j)
-        ann.feed_forward(X[idx], batch_size = ann.batch_size)
-        dydX_test = ann.jacobian(X[idx], batch_size = ann.batch_size)
-        dydW_test = ann.layers[l].y_grad_W
-        X_hat_test = X[idx] + 2.0*phi*dydX_test.T
-        ann.feed_forward(X_hat_test, batch_size = ann.batch_size)
-        dydX2_test = ann.jacobian(X_hat_test, batch_size = ann.batch_size)
-        dydW_hat_test = ann.layers[l].y_grad_W
-        d2y_dWdX_test = (dydW_hat_test - dydW_test)/phi
-        
-        diff.append(np.linalg.norm(d2y_dWdX_test - d2y_dWdX, ord=np.inf)/np.linalg.norm(d2y_dWdX_test, ord=np.inf))
+plt.close('all')
+
+###################################
+#generate synthetic regression data
+###################################
+
+#number of data points
+n_days = 8*365
+
+#get the data
+name = 'dE'
+X, y, t = tf.get_tau_EZ_regres(n_days, name)
+
+N = t.size
+
+N_bins = 10
+bins = np.linspace(np.min(y), np.max(y), N_bins)
+
+count, _, binnumbers = stats.binned_statistic(y, np.zeros(y.size), statistic='count', bins=bins)
+
+unique_binnumbers = np.unique(binnumbers)
+
+fig = plt.figure()
+ax = fig.add_subplot(111)
+
+for i in unique_binnumbers:
+    idx = np.where(binnumbers == i)[0]
     
-    plt.plot(diff)
+    ax.plot(X[idx, 5], X[idx, 0], 'o', label=i)
+    
+leg = plt.legend()
+leg.draggable(True)
 
-plt.yscale('log')
+plt.show()
