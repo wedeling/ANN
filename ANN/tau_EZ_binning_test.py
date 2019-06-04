@@ -19,7 +19,8 @@ n_days = 365
 
 #get the data
 name = 'dE'
-X, y, t = tf.get_tau_EZ_regres(n_days, name)
+n_bins = 10
+X, y, t = tf.get_tau_EZ_binned(n_days, name, n_bins)
 
 N = t.size
 
@@ -51,11 +52,12 @@ if on_gpu == True:
     X_train = cp.asarray(X_train)
     y_train = cp.asarray(y_train)
 
-ann = NN.ANN(X = X_train, y = y_train, alpha = 0.001, beta1 = 0.9, beta2=0.999, lamb_J = 0.0, phi = 0.0, decay_rate = 0.9, \
-             decay_step=10**5, n_layers = 4, n_neurons=64, activation = 'hard_tanh', standardize = True, \
-             neuron_based_compute=False, batch_size=128, param_specific_learn_rate=True, on_gpu=on_gpu, name=name)
+ann = NN.ANN(X = X_train, y = y_train, decay_rate = 0.9, n_out = n_bins, loss = 'cross_entropy', \
+             n_layers = 4, n_neurons=64, activation = 'relu', standardize_y = False, \
+             batch_size=128, name=name)
 
 ann.get_n_weights()
+"""
 
 ##############
 #train the ANN
@@ -99,5 +101,5 @@ print(t1-t0)
 #ax.plot(t[I:], y_hat[I:], 'r+')
 #
 #plt.tight_layout()
-
+"""
 plt.show()

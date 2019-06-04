@@ -12,10 +12,6 @@ from scipy import stats
 
 plt.close('all')
 
-###################################
-#generate synthetic regression data
-###################################
-
 #number of data points
 n_days = 8*365
 
@@ -27,7 +23,6 @@ N = t.size
 
 N_bins = 10
 bins = np.linspace(np.min(y), np.max(y), N_bins)
-
 count, _, binnumbers = stats.binned_statistic(y, np.zeros(y.size), statistic='count', bins=bins)
 
 unique_binnumbers = np.unique(binnumbers)
