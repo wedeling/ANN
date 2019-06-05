@@ -184,10 +184,10 @@ def get_tau_EZ_binned(n_days, name, n_bins):
     X[:, 3] = h5f['s_n_LF'][0:N-1:sub]
     X[:, 4] = h5f['v_n_LF'][0:N-1:sub]
     X[:, 5] = h5f['o_n_LF'][0:N-1:sub]
-    X[:, 6] = h5f['tau_E'][0:N-1:sub]*h5f['sprime_n_LF'][0:N-1:sub]
-    X[:, 7] = h5f['tau_Z'][0:N-1:sub]*h5f['zprime_n_LF'][0:N-1:sub]
-    #X[:, 6] = h5f['sprime_n_LF'][0:N-1:sub]
-    #X[:, 7] = h5f['zprime_n_LF'][0:N-1:sub]
+    #X[:, 6] = h5f['tau_E'][0:N-1:sub]*h5f['sprime_n_LF'][0:N-1:sub]
+    #X[:, 7] = h5f['tau_Z'][0:N-1:sub]*h5f['zprime_n_LF'][0:N-1:sub]
+    X[:, 6] = h5f['sprime_n_LF'][0:N-1:sub]
+    X[:, 7] = h5f['zprime_n_LF'][0:N-1:sub]
     
     t = h5f['t'][0:N-1:sub]
     

@@ -29,6 +29,9 @@ class ANN:
         #use either numpy or cupy via xp based on the on_gpu flag
         global xp
         print('===============================')
+        print('Neural net parameters')
+        print('===============================')
+
         if on_gpu == False:
             print('Numpy-based computation')
             import numpy as xp
@@ -38,6 +41,7 @@ class ANN:
             
         print('Number of layers =', n_layers)
         print('Number of features =', self.n_in)
+        print('Loss function =', loss)
         print('Number of neurons per hidden layer =', n_neurons)
         print('Number of output neurons =', n_out)
         print('Activation hidden layers =', activation)
@@ -164,6 +168,12 @@ class ANN:
                 self.layers[i].compute_output(batch_size)
             
         return self.layers[-1].h
+    
+    #get the output of the softmax layer
+    def get_softmax(self, X_i, batch_size = 1):
+        
+        h = self.feed_forward(X_i, batch_size = batch_size)
+        return np.exp(h)/np.sum(np.exp(h), axis=0)
  
     #compute jacobian of the neural net via back propagation
     def jacobian(self, X_i, batch_size = 1, feed_forward = False):
@@ -294,7 +304,7 @@ class ANN:
             alpha = self.alpha*self.decay_rate**(np.int(i/self.decay_step))
 
             #run the batch
-            self.batch(self.X[rand_idx], self.y[rand_idx], alpha=alpha, beta1=self.beta1, beta2=self.beta2, t=i+1)
+            self.batch(self.X[rand_idx], self.y[rand_idx].T, alpha=alpha, beta1=self.beta1, beta2=self.beta2, t=i+1)
             
             if check_derivative == True and np.mod(i, 1000) == 0:
                 self.check_derivative(self.X[rand_idx], self.y[rand_idx], 10)
@@ -413,6 +423,23 @@ class ANN:
                 n_misclass += 1
                 
         print('Number of misclassifications = ', n_misclass)
+        
+    #compute the number of misclassifications for a sofmax layer
+    def compute_misclass_softmax(self):
+        
+        n_misclass = 0.0
+        
+        for i in range(self.n_train):
+            o_i = self.get_softmax(self.X[i].reshape([1, self.n_in])).flatten()
+            
+            idx1 = np.argmax(o_i)
+            idx2 = np.where(self.y[i] == 1.0)[0][0]
+
+            if idx1 != idx2:
+                n_misclass += 1
+                
+        print('Number of misclassifications =', n_misclass)
+        print('Misclassification percentage =', n_misclass/self.n_train*100, '%')
         
     #return the number of weights
     def get_n_weights(self):

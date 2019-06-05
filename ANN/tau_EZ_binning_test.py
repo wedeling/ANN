@@ -1,12 +1,7 @@
-"""
-TEST THE ANN CLASS ON A REAL REGRESSION PROBLEM
-"""
-
 import numpy as np
 import matplotlib.pyplot as plt
 from base import NN
 import test_functions as tf
-import time
 
 plt.close('all')
 
@@ -27,13 +22,9 @@ N = t.size
 #standardize the features and the data
 try:
     N_feat = X.shape[1]
-#    for i in range(N_feat):
-#        X[:,i] = (X[:,i] - np.mean(X[:,i]))/np.std(X[:,i])
 except IndexError:
     N_feat = 1
-#    X = (X - np.mean(X))/np.std(X) 
     
-#
 #split the data into a training and a validation data set, if required
 
 #fraction of the data to be used for training
@@ -52,54 +43,32 @@ if on_gpu == True:
     X_train = cp.asarray(X_train)
     y_train = cp.asarray(y_train)
 
-ann = NN.ANN(X = X_train, y = y_train, decay_rate = 0.9, n_out = n_bins, loss = 'cross_entropy', \
-             n_layers = 4, n_neurons=64, activation = 'relu', standardize_y = False, \
-             batch_size=128, name=name)
+ann = NN.ANN(X = X_train, y = y_train, alpha = 0.001, decay_rate = 0.9, n_out = n_bins, loss = 'cross_entropy', \
+             n_layers = 3, n_neurons=32, activation = 'hard_tanh', activation_out = 'linear', \
+             standardize_y = False, batch_size=512, name=name, save=True)
 
 ann.get_n_weights()
-"""
 
 ##############
 #train the ANN
 ##############
 
-t0 = time.time()
-ann.train(5000, store_loss=True, check_derivative=False)
-t1 = time.time()
-print(t1-t0) 
+ann.train(500000, store_loss=True)
 
-#if len(ann.loss_vals) > 0:
-#    fig_loss = plt.figure()
-#    plt.yscale('log')
-#    plt.plot(ann.loss_vals)
-#
-###############
-##plot the data
-###############
-#
-#fig = plt.figure()
-#ax = fig.add_subplot(121, title=r'$\Delta E'+'\;\mathrm{data}$', xlabel=r'$t$')
-#ax.plot(t[0:I], y[0:I], 'b+')
-#ax.plot(t[I:], y[I:], 'r+')
-##
-#########################################
-###plot the ANN regression after training
-#########################################
-#
-#ax = fig.add_subplot(122, title='Neural net prediction', xlabel=r'$t$')
-#
-#y_hat = np.zeros(N)
-#
-##if standardize = True in ANN
-#X_pred = (X - ann.X_mean)/ann.X_std
-##X_pred = X
-#
-#for i in range(N):
-#    y_hat[i] = ann.feed_forward(X_pred[i].reshape([1,N_feat]))
-#    
-#ax.plot(t[0:I], y_hat[0:I], 'b+')
-#ax.plot(t[I:], y_hat[I:], 'r+')
-#
-#plt.tight_layout()
-"""
+if len(ann.loss_vals) > 0:
+    fig_loss = plt.figure()
+    plt.yscale('log')
+    plt.plot(ann.loss_vals)
+    
+########################################
+#compute the number of misclassification
+########################################
+
+ann.compute_misclass_softmax()
+
+#############
+#plot results
+#############
+
+
 plt.show()
