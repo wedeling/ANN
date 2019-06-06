@@ -4,140 +4,145 @@ from .Layer import Layer
 
 class ANN:
 
-    def __init__(self, X, y, alpha = 0.001, decay_rate = 1.0, decay_step = 10**4, beta1 = 0.9, beta2 = 0.999, lamb = 0.0, \
+    def __init__(self, X=[], y=[], alpha = 0.001, decay_rate = 1.0, decay_step = 10**4, beta1 = 0.9, beta2 = 0.999, lamb = 0.0, \
                  phi = 0.0, lamb_J = 0.0, n_out = 1, \
                  param_specific_learn_rate = True, loss = 'squared', activation = 'tanh', activation_out = 'linear', \
                  n_layers = 2, n_neurons = 16, \
-                 bias = True, neuron_based_compute = False, batch_size = 1, save = True, name='ANN', on_gpu = False, \
+                 bias = True, neuron_based_compute = False, batch_size = 1, save = True, load=False, name='ANN', on_gpu = False, \
                  standardize_X = True, standardize_y = True):
 
-        #the features
-        self.X = X
-        
-        #number of training data points
-        self.n_train = X.shape[0]
-        
-        #the training outputs
-        self.y = y
+        #loaded a previous neural net
+        if load == True:
+            self.load_ANN(name)
+        #create a new neural net
+        else:    
+            #the features
+            self.X = X
+            
+            #number of training data points
+            self.n_train = X.shape[0]
+            
+            #the training outputs
+            self.y = y
+                    
+            #number of input nodes
+            try:
+                self.n_in = X.shape[1]
+            except IndexError:
+                self.n_in = 1
+            
+            #use either numpy or cupy via xp based on the on_gpu flag
+            global xp
+            print('===============================')
+            print('Neural net parameters')
+            print('===============================')
+    
+            if on_gpu == False:
+                print('Numpy-based computation')
+                import numpy as xp
+            else:
+                print('Cupy-based computation')
+                import cupy as xp
                 
-        #number of input nodes
-        try:
-            self.n_in = X.shape[1]
-        except IndexError:
-            self.n_in = 1
-        
-        #use either numpy or cupy via xp based on the on_gpu flag
-        global xp
-        print('===============================')
-        print('Neural net parameters')
-        print('===============================')
-
-        if on_gpu == False:
-            print('Numpy-based computation')
-            import numpy as xp
-        else:
-            print('Cupy-based computation')
-            import cupy as xp
+            print('Number of layers =', n_layers)
+            print('Number of features =', self.n_in)
+            print('Loss function =', loss)
+            print('Number of neurons per hidden layer =', n_neurons)
+            print('Number of output neurons =', n_out)
+            print('Activation hidden layers =', activation)
+            print('Activation output layer =', activation_out)
+            print('Loss function =', loss)
+            print('===============================')
+    
+            #standardize the training data
+            if standardize_X == True:
+                
+                self.X_mean = xp.mean(X, axis = 0)
+                self.X_std = xp.std(X, axis = 0)
+                self.X = (X - self.X_mean)/self.X_std
             
-        print('Number of layers =', n_layers)
-        print('Number of features =', self.n_in)
-        print('Loss function =', loss)
-        print('Number of neurons per hidden layer =', n_neurons)
-        print('Number of output neurons =', n_out)
-        print('Activation hidden layers =', activation)
-        print('Activation output layer =', activation_out)
-        print('Loss function =', loss)
-        print('===============================')
-
-        #standardize the training data
-        if standardize_X == True:
+            if standardize_y == True:
+                self.y_mean = xp.mean(y, axis = 0)
+                self.y_std = xp.std(y, axis = 0)
+                self.y = (y - self.y_mean)/self.y_std
             
-            self.X_mean = xp.mean(X, axis = 0)
-            self.X_std = xp.std(X, axis = 0)
-            self.X = (X - self.X_mean)/self.X_std
-        
-        if standardize_y == True:
-            self.y_mean = xp.mean(y, axis = 0)
-            self.y_std = xp.std(y, axis = 0)
-            self.y = (y - self.y_mean)/self.y_std
-        
-        #number of layers (hidden + output)
-        self.n_layers = n_layers
-
-        #number of neurons in a hidden layer
-        self.n_neurons = n_neurons
-
-        #number of output neurons
-        self.n_out = n_out
-        
-        #use bias neurons
-        self.bias = bias
-        
-        #loss function type
-        self.loss = loss
-
-        #training rate
-        self.alpha = alpha
-
-        #L2 regularization parameter
-        self.lamb = lamb
-
-        #Jacobian regularization and finite difference parameter (phi)
-        self.lamb_J = lamb_J
-        self.phi = phi
-        self.test = []
-
-        #the rate of decay and decay step for alpha
-        self.decay_rate = decay_rate        
-        self.decay_step = decay_step
-
-        #momentum parameter
-        self.beta1 = beta1
-        
-        #squared gradient parameter
-        self.beta2 = beta2
-        
-        #use parameter specific learning rate
-        self.param_specific_learn_rate = param_specific_learn_rate
-
-        #activation function of the hidden layers
-        self.activation = activation
-        
-        #activation function of the output layer
-        self.activation_out = activation_out
-        
-        #save the neural network after training
-        self.save = save
-        self.name = name
-        
-        #determines where to compute the neuron outputs and gradients 
-        #True: locally at the neuron, False: on the Layer level in one shot via linear algebra)
-        self.neuron_based_compute = neuron_based_compute
-
-        #size of the mini batch used in stochastic gradient descent
-        self.batch_size = batch_size
-        
-        self.loss_vals = []
-
-        self.layers = []
-        
-        #add the input layer
-        self.layers.append(Layer(self.n_in, 0, self.n_layers, 'linear', \
-                                 self.loss, self.bias, batch_size = batch_size, lamb = lamb, \
-                                 neuron_based_compute=neuron_based_compute, on_gpu=on_gpu)) 
-        
-        #add the hidden layers
-        for r in range(1, self.n_layers):
-            self.layers.append(Layer(self.n_neurons, r, self.n_layers, self.activation, \
-                                     self.loss, self.bias, batch_size=batch_size, lamb = lamb,\
-                                     neuron_based_compute=neuron_based_compute, on_gpu=on_gpu))
-        
-        #add the output layer
-        self.layers.append(Layer(self.n_out, self.n_layers, self.n_layers, self.activation_out, \
-                                 self.loss, batch_size=batch_size, lamb = lamb,\
-                                 neuron_based_compute = neuron_based_compute, on_gpu=on_gpu))
-        
-        self.connect_layers()
+            #number of layers (hidden + output)
+            self.n_layers = n_layers
+    
+            #number of neurons in a hidden layer
+            self.n_neurons = n_neurons
+    
+            #number of output neurons
+            self.n_out = n_out
+            
+            #use bias neurons
+            self.bias = bias
+            
+            #loss function type
+            self.loss = loss
+    
+            #training rate
+            self.alpha = alpha
+    
+            #L2 regularization parameter
+            self.lamb = lamb
+    
+            #Jacobian regularization and finite difference parameter (phi)
+            self.lamb_J = lamb_J
+            self.phi = phi
+            self.test = []
+    
+            #the rate of decay and decay step for alpha
+            self.decay_rate = decay_rate        
+            self.decay_step = decay_step
+    
+            #momentum parameter
+            self.beta1 = beta1
+            
+            #squared gradient parameter
+            self.beta2 = beta2
+            
+            #use parameter specific learning rate
+            self.param_specific_learn_rate = param_specific_learn_rate
+    
+            #activation function of the hidden layers
+            self.activation = activation
+            
+            #activation function of the output layer
+            self.activation_out = activation_out
+            
+            #save the neural network after training
+            self.save = save
+            self.name = name
+            
+            #determines where to compute the neuron outputs and gradients 
+            #True: locally at the neuron, False: on the Layer level in one shot via linear algebra)
+            self.neuron_based_compute = neuron_based_compute
+    
+            #size of the mini batch used in stochastic gradient descent
+            self.batch_size = batch_size
+            
+            self.loss_vals = []
+    
+            self.layers = []
+            
+            #add the input layer
+            self.layers.append(Layer(self.n_in, 0, self.n_layers, 'linear', \
+                                     self.loss, self.bias, batch_size = batch_size, lamb = lamb, \
+                                     neuron_based_compute=neuron_based_compute, on_gpu=on_gpu)) 
+            
+            #add the hidden layers
+            for r in range(1, self.n_layers):
+                self.layers.append(Layer(self.n_neurons, r, self.n_layers, self.activation, \
+                                         self.loss, self.bias, batch_size=batch_size, lamb = lamb,\
+                                         neuron_based_compute=neuron_based_compute, on_gpu=on_gpu))
+            
+            #add the output layer
+            self.layers.append(Layer(self.n_out, self.n_layers, self.n_layers, self.activation_out, \
+                                     self.loss, batch_size=batch_size, lamb = lamb,\
+                                     neuron_based_compute = neuron_based_compute, on_gpu=on_gpu))
+            
+            self.connect_layers()
    
     #connect each layer in the NN with its previous and the next      
     def connect_layers(self):
@@ -433,7 +438,7 @@ class ANN:
             o_i = self.get_softmax(self.X[i].reshape([1, self.n_in])).flatten()
             
             idx1 = np.argmax(o_i)
-            idx2 = np.where(self.y[i] == 1.0)[0][0]
+            idx2 = np.where(self.y[i] == 1.0)[0]
 
             if idx1 != idx2:
                 n_misclass += 1
