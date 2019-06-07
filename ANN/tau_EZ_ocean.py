@@ -124,8 +124,8 @@ def get_surrogate_tau_src_EZ(w_hat_n_LF, r, tau_max_E, tau_max_Z):
     src_E = E_LF**2/Z_LF - S_LF
     src_Z = -E_LF**2/S_LF + Z_LF
 
-    dE = r['dE'] 
-    dZ = r['dZ']
+    dE = r[0] 
+    dZ = r[1]
 
     tau_E = tau_max_E*np.tanh(dE/E_LF)*np.sign(src_E)
     tau_Z = tau_max_Z*np.tanh(dZ/Z_LF)*np.sign(src_Z)
@@ -292,7 +292,7 @@ n_steps = np.ceil((t_end-t)/dt).astype('int')
 sim_ID = 'tau_EZ'
 #framerate of storing data, plotting results, computing correlations (1 = every integration time step)
 store_frame_rate = 1
-plot_frame_rate = np.floor(10.0*day/dt).astype('int')
+plot_frame_rate = np.floor(1.0*day/dt).astype('int')
 corr_frame_rate = np.floor(0.25*day/dt).astype('int')
 #length of data array
 S = np.floor(n_steps/store_frame_rate).astype('int')
@@ -487,7 +487,8 @@ for n in range(n_steps):
     if eddy_forcing_type == 'tau_ortho':
         EF_hat = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime
     elif eddy_forcing_type == 'tau_ortho_ann':
-        EF_hat = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime
+        
+        #EF_hat = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime
         
         #features
         X_feat = np.array([z_n_LF, e_n_LF, u_n_LF, s_n_LF, v_n_LF, o_n_LF, sprime_n_LF, zprime_n_LF])
@@ -498,8 +499,14 @@ for n in range(n_steps):
         _, idx_max_dE = dE_ann.get_softmax(X_feat.reshape([1, n_feat]))
         _, idx_max_dZ = dZ_ann.get_softmax(X_feat.reshape([1, n_feat]))
         
-        R_DE.append(dE_sampler.draw(idx_max_dE))
-        R_DZ.append(dZ_sampler.draw(idx_max_dZ))
+        r = [dE_sampler.draw(idx_max_dE), dZ_sampler.draw(idx_max_dZ)]
+        
+        r_tau_E, r_tau_Z = get_surrogate_tau_src_EZ(w_hat_n_LF, r, 1.0, 1.0)
+        
+        EF_hat = -r_tau_E*psi_hat_n_prime - r_tau_Z*w_hat_n_prime
+        
+        R_DE.append(r[0])
+        R_DZ.append(r[1])
         
         T.append(t)
         
