@@ -70,11 +70,21 @@ def store_samples_hdf5():
         
     h5f.close()    
 
+def draw_w():
+    plt.subplot(111)
+    plt.plot(T, R_DE)
+    plt.plot(T, r_dE[0:n+1])
+    plt.tight_layout()
+
 def draw_2w():
-    plt.subplot(121)
-    plt.contourf(x, y, w_np1_LF, 100)
-    plt.subplot(122)
-    plt.contourf(x, y, EF, 100)
+    plt.subplot(121, title=r'$\Delta E$', xlabel=r'$t\;[day]$')
+    plt.plot(np.array(T)/day, R_DE)
+    plt.plot(np.array(T)/day, r_dE[0:n+1], linewidth=4)
+    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+    plt.subplot(122, title=r'$\Delta Z$', xlabel=r'$t\;[day]$')
+    plt.plot(np.array(T)/day, R_DZ)
+    plt.plot(np.array(T)/day, r_dZ[0:n+1], linewidth=4)
+    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
     plt.tight_layout()
 
 #return the fourier coefs of the stream function
@@ -211,7 +221,9 @@ from scipy.integrate import simps
 from itertools import combinations, chain
 import sys
 import json
-#from drawnow import drawnow
+from base import NN
+import SimpleBin as binning
+from drawnow import drawnow
 
 plt.close('all')
 plt.rcParams['image.cmap'] = 'seismic'
@@ -268,7 +280,7 @@ mu = 1.0/(day*decay_time_mu)
 
 #start, end time, end time of data (training period), time step
 t = 250.0*day
-t_end = t + 8*365*day
+t_end = t + 50*day
 dt = 0.01
 n_steps = np.ceil((t_end-t)/dt).astype('int')
 
@@ -280,7 +292,7 @@ n_steps = np.ceil((t_end-t)/dt).astype('int')
 sim_ID = 'tau_EZ'
 #framerate of storing data, plotting results, computing correlations (1 = every integration time step)
 store_frame_rate = 1
-plot_frame_rate = np.floor(1.0*day/dt).astype('int')
+plot_frame_rate = np.floor(10.0*day/dt).astype('int')
 corr_frame_rate = np.floor(0.25*day/dt).astype('int')
 #length of data array
 S = np.floor(n_steps/store_frame_rate).astype('int')
@@ -289,34 +301,67 @@ S = np.floor(n_steps/store_frame_rate).astype('int')
 tau_E_max = 1.0
 tau_Z_max = 1.0
 
-#read flags from input file
-fpath = sys.argv[1]
-fp = open(fpath, 'r')
-N_surr = int(fp.readline())
-inputs = []
-
-flags = json.loads(fp.readline())
-print('*********************')
-print('Simulation flags')
-print('*********************')
-
-for key in flags.keys():
-    vars()[key] = flags[key]
-    print(key, '=', flags[key])
-
-print('*********************')
-
-##Manual specification of flags 
-#state_store = True      #store the state at the end
-#restart = False         #restart from prev state
-#store = False           #store data
-#plot = True             #plot results while running, requires drawnow package
-#compute_ref = True      #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
+##read flags from input file
+#fpath = sys.argv[1]
+#fp = open(fpath, 'r')
+#N_surr = int(fp.readline())
+#inputs = []
 #
-#eddy_forcing_type = 'tau_ortho'  #which eddy forcing to use (binned, tau_ortho, exact, unparam)
-#input_file = 'manual'
+#flags = json.loads(fp.readline())
+#print('*********************')
+#print('Simulation flags')
+#print('*********************')
+#
+#for key in flags.keys():
+#    vars()[key] = flags[key]
+#    print(key, '=', flags[key])
+#
+#print('*********************')
+
+#Manual specification of flags 
+state_store = False      #store the state at the end
+restart = True           #restart from prev state
+store = False            #store data
+plot = True              #plot results while running, requires drawnow package
+compute_ref = True       #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
+
+eddy_forcing_type = 'tau_ortho_ann'  #which eddy forcing to use (tau_ortho, tau_ortho_ann, exact, unparam)
+input_file = 'manual'
 
 store_ID = sim_ID + '_' + input_file 
+
+##################       
+# ANN PARAMETERS #
+##################
+
+if eddy_forcing_type == 'tau_ortho_ann':
+
+    #create empty ANN object
+    dE_ann = NN.ANN(X = np.zeros(10), y = np.zeros(1))
+    #load trained ann
+    dE_ann.load_ANN(name='dE')
+
+    #create empty ANN object
+    dZ_ann = NN.ANN(X = np.zeros(10), y = np.zeros(1))
+    #load trained ann
+    dZ_ann.load_ANN(name='dZ')
+    
+    #NOTE: making the assumption here that both ANNs use the same features
+    X_mean = dE_ann.X_mean
+    X_std = dE_ann.X_std
+    
+    #number of featues
+    n_feat = dE_ann.n_in
+    
+    #reference data for resampling
+    r_dE = dE_ann.aux_vars['y']
+    bins_dE = dE_ann.aux_vars['bins']
+    r_dZ = dZ_ann.aux_vars['y']
+    bins_dZ = dZ_ann.aux_vars['bins']
+    
+    #bin samplers
+    dE_sampler = binning.SimpleBin(r_dE, bins_dE)
+    dZ_sampler = binning.SimpleBin(r_dZ, bins_dZ)
 
 ###############################
 # SPECIFY WHICH DATA TO STORE #
@@ -395,6 +440,8 @@ norm_factor_LF = 1.0/(3.0/(2.0*dt) - nu_LF*k_squared + mu)  #for Low-Fidelity (L
 #some counters
 j = 0; j2 = 0; idx = 0;
 
+T = []; R_DE = []; R_DZ = []
+
 #time loop
 for n in range(n_steps):
     
@@ -439,6 +486,23 @@ for n in range(n_steps):
     #exact orthogonal pattern surrogate
     if eddy_forcing_type == 'tau_ortho':
         EF_hat = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime
+    elif eddy_forcing_type == 'tau_ortho_ann':
+        EF_hat = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime
+        
+        #features
+        X_feat = np.array([z_n_LF, e_n_LF, u_n_LF, s_n_LF, v_n_LF, o_n_LF, sprime_n_LF, zprime_n_LF])
+
+        #standardize by data mean and std if standardize flag was set to True during ann training
+        X_feat = (X_feat - X_mean)/X_std
+        
+        _, idx_max_dE = dE_ann.get_softmax(X_feat.reshape([1, n_feat]))
+        _, idx_max_dZ = dZ_ann.get_softmax(X_feat.reshape([1, n_feat]))
+        
+        R_DE.append(dE_sampler.draw(idx_max_dE))
+        R_DZ.append(dZ_sampler.draw(idx_max_dZ))
+        
+        T.append(t)
+        
     #unparameterized solution
     elif eddy_forcing_type == 'unparam':
         EF_hat = np.zeros([N, int(N/2+1)])
@@ -447,7 +511,7 @@ for n in range(n_steps):
         EF_hat = EF_hat_nm1_exact
     else:
         print('No valid eddy_forcing_type selected')
-        import sys; sys.exit()
+        sys.exit()
    
     #########################
     #LF solve
@@ -470,7 +534,7 @@ for n in range(n_steps):
         print('e_n_HF: %.4f' % e_n_HF, 'z_n_HF: %.4f' % z_n_HF, 's_n_HF: %.4f' % s_n_HF)
         print('e_n_LF: %.4f' % e_n_LF, 'z_n_LF: %.4f' % z_n_LF, 's_n_LF: %.4f' % s_n_LF)
 
-        #drawnow(draw_2w)
+        drawnow(draw_2w)
         
     #store samples to dict
     if j2 == store_frame_rate and store == True:

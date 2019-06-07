@@ -22,8 +22,10 @@ X, y, t = tf.get_tau_EZ_regres(n_days, name)
 N = t.size
 
 N_bins = 10
-bins = np.linspace(np.min(y), np.max(y), N_bins)
+bins = np.linspace(np.min(y), np.max(y), N_bins+1)
 count, _, binnumbers = stats.binned_statistic(y, np.zeros(y.size), statistic='count', bins=bins)
+
+binnumbers2 = np.digitize(y, bins)
 
 unique_binnumbers = np.unique(binnumbers)
 
