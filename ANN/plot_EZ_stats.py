@@ -19,8 +19,8 @@ HOME = os.path.abspath(os.path.dirname(__file__))
 # load the reference data #
 ###########################
  
-sim_ID = 'tau_EZ_training'
-fname = HOME + '/samples/' + sim_ID + '_t_3170.0.hdf5'
+sim_ID = 'tau_EZ_manual'
+fname = HOME + '/samples/' + sim_ID + '_t_515.0.hdf5'
 
 h5f = h5py.File(fname, 'r')
 

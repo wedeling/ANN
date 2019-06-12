@@ -201,7 +201,7 @@ class Layer:
             elif self.loss == 'cross_entropy':
                 
                 #compute values of the softmax layer
-                o_i = xp.exp(h)/np.sum(np.exp(h), axis=0)
+                o_i = np.exp(h)/np.sum(np.exp(h), axis=0)
                 
                 #(see eq. 3.22 of Aggarwal book)
                 self.delta_ho = o_i - y_i               

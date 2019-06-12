@@ -35,7 +35,7 @@ ax = fig.add_subplot(111)
 for i in unique_binnumbers:
     idx = np.where(binnumbers == i)[0]
     
-    ax.plot(X[idx, 5], X[idx, 0], 'o', label=i)
+    ax.plot(X[idx, 6], X[idx, 0], 'o', label=i)
     
 leg = plt.legend()
 leg.draggable(True)

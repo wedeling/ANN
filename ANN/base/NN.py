@@ -4,7 +4,7 @@ from .Layer import Layer
 
 class ANN:
 
-    def __init__(self, X, y, alpha = 0.001, decay_rate = 1.0, decay_step = 10**4, beta1 = 0.9, beta2 = 0.999, lamb = 0.0, \
+    def __init__(self, X, y, alpha = 0.001, decay_rate = 1.0, decay_step = 10**5, beta1 = 0.9, beta2 = 0.999, lamb = 0.0, \
                  phi = 0.0, lamb_J = 0.0, n_out = 1, \
                  param_specific_learn_rate = True, loss = 'squared', activation = 'tanh', activation_out = 'linear', \
                  n_layers = 2, n_neurons = 16, \
@@ -55,6 +55,7 @@ class ANN:
 
         #number of output neurons
         self.n_out = n_out
+        self.out_idx = np.arange(n_out)
         
         #use bias neurons
         self.bias = bias
@@ -171,6 +172,25 @@ class ANN:
         #return values and index of highest probability
         return o_i.flatten(), np.argmax(o_i)
  
+    #get the output of the softmax layer, where only neuron idx and its direct
+    #neighbors are considered
+    #(so far: only works for batch_size = 1)
+    def get_local_softmax(self, X_i, idx):
+        
+        h = self.feed_forward(X_i, batch_size = 1)
+        
+        #soft max values
+        o_i = np.exp(h)
+        
+        #exclude all but neurons idx - 1, idx and idx + 1
+        not_neighbors = np.setdiff1d(self.out_idx, [idx-1, idx, idx+1])
+        o_i[not_neighbors] = 0.0
+        
+        o_i = o_i/np.sum(o_i, axis=0)
+        
+        #return values and index of highest probability
+        return o_i.flatten(), np.argmax(o_i)
+    
     #compute jacobian of the neural net via back propagation
     def jacobian(self, X_i, batch_size = 1, feed_forward = False):
         
@@ -439,6 +459,8 @@ class ANN:
                 
         print('Number of misclassifications =', n_misclass)
         print('Misclassification percentage =', n_misclass/self.n_train*100, '%')
+        
+        return n_misclass/self.n_train
         
     #return the number of weights
     def get_n_weights(self):

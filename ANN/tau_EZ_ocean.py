@@ -280,7 +280,7 @@ mu = 1.0/(day*decay_time_mu)
 
 #start, end time, end time of data (training period), time step
 t = 250.0*day
-t_end = t + 50*day
+t_end = t + 265*day
 dt = 0.01
 n_steps = np.ceil((t_end-t)/dt).astype('int')
 
@@ -321,7 +321,7 @@ tau_Z_max = 1.0
 #Manual specification of flags 
 state_store = False      #store the state at the end
 restart = True           #restart from prev state
-store = False            #store data
+store = True             #store data
 plot = True              #plot results while running, requires drawnow package
 compute_ref = True       #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
 
@@ -442,6 +442,8 @@ j = 0; j2 = 0; idx = 0;
 
 T = []; R_DE = []; R_DZ = []
 
+fig = plt.figure(figsize=[10, 5])
+
 #time loop
 for n in range(n_steps):
     
@@ -495,7 +497,17 @@ for n in range(n_steps):
 
         #standardize by data mean and std if standardize flag was set to True during ann training
         X_feat = (X_feat - X_mean)/X_std
-        
+ 
+#        if n == 0:       
+#            _, idx_max_dE_n = dE_ann.get_softmax(X_feat.reshape([1, n_feat]))
+#            _, idx_max_dZ_n = dZ_ann.get_softmax(X_feat.reshape([1, n_feat]))
+#        
+#        o_i, idx_max_dE = dE_ann.get_local_softmax(X_feat.reshape([1, n_feat]), idx_max_dE_n)
+#        _, idx_max_dZ = dZ_ann.get_local_softmax(X_feat.reshape([1, n_feat]), idx_max_dZ_n)
+#       
+#        idx_max_dE_n = idx_max_dE
+#        idx_max_dZ_n = idx_max_dZ
+
         _, idx_max_dE = dE_ann.get_softmax(X_feat.reshape([1, n_feat]))
         _, idx_max_dZ = dZ_ann.get_softmax(X_feat.reshape([1, n_feat]))
         

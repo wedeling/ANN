@@ -13,7 +13,7 @@ plt.close('all')
 n_days = 365
 
 #get the data
-name = 'dZ'
+name = 'dE'
 n_bins = 10
 X_train, y, bin_idx_train, bins, t = tf.get_tau_EZ_binned(n_days, name, n_bins)
 
@@ -27,8 +27,8 @@ train = True
 
 if train == True:
 
-    ann = NN.ANN(X = X_train, y = bin_idx_train, alpha = 0.001, decay_rate = 0.9, n_out = n_bins, loss = 'cross_entropy', \
-                 n_layers = 3, n_neurons=32, activation = 'hard_tanh', activation_out = 'linear', \
+    ann = NN.ANN(X = X_train, y = bin_idx_train, alpha = 0.001, decay_rate = 0.9, decay_step=10**4, n_out = n_bins, loss = 'cross_entropy', \
+                 n_layers = 3, n_neurons=32, activation = 'hard_tanh', activation_out = 'relu', \
                  standardize_y = False, batch_size=512, name=name, save=True, aux_vars={'y':y, 'bins':bins})
 
     ann.train(100000, store_loss=True)
@@ -47,7 +47,7 @@ ann.get_n_weights()
 #compute the number of misclassification
 ########################################
 
-ann.compute_misclass_softmax()
+#ann.compute_misclass_softmax()
 
 #############
 #plot results
