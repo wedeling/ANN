@@ -4,7 +4,8 @@ import numpy as np
 class Layer:
     
     def __init__(self, n_neurons, r, n_layers, activation, loss, bias = False, \
-                 neuron_based_compute = False, batch_size = 1, lamb = 0.0, on_gpu = False):
+                 neuron_based_compute = False, batch_size = 1, lamb = 0.0, on_gpu = False, \
+                 n_softmax = 0):
         
         self.n_neurons = n_neurons
         self.r = r
@@ -14,7 +15,8 @@ class Layer:
         self.bias = bias
         self.neuron_based_compute = neuron_based_compute
         self.batch_size = batch_size
-        self.lamb = lamb   
+        self.lamb = lamb
+        self.n_softmax = n_softmax
         
         #use either numpy or cupy via xp based on the on_gpu flag
         global xp
@@ -153,7 +155,10 @@ class Layer:
                 self.L_i = (y_i - h)**2
             elif self.loss == 'cross_entropy':
                 #compute values of the softmax layer
-                o_i = xp.exp(h)/xp.sum(np.exp(h), axis=0)
+                #more than 1 (independent) softmax layer can be placed at the output
+                o_i = []
+                [o_i.append(xp.exp(h_i)/xp.sum(np.exp(h_i), axis=0)) for h_i in np.split(h, self.n_softmax)]
+                o_i = np.concatenate(o_i)
                 self.L_i = -xp.sum(y_i*np.log(o_i))
             else:
                 print('Cannot compute loss: unknown loss and/or activation function')
@@ -201,7 +206,10 @@ class Layer:
             elif self.loss == 'cross_entropy':
                 
                 #compute values of the softmax layer
-                o_i = np.exp(h)/np.sum(np.exp(h), axis=0)
+                #more than 1 (independent) softmax layer can be placed at the output
+                o_i = []
+                [o_i.append(xp.exp(h_i)/xp.sum(np.exp(h_i), axis=0)) for h_i in np.split(h, self.n_softmax)]
+                o_i = np.concatenate(o_i)
                 
                 #(see eq. 3.22 of Aggarwal book)
                 self.delta_ho = o_i - y_i               

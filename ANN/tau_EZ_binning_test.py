@@ -10,12 +10,18 @@ plt.close('all')
 ###################################
 
 #number of data points
-n_days = 8*365
+n_days = 365
 
 #get the data
-name = 'dZ'
+name = 'dE_dZ'
+n_softmax = 2
 n_bins = 10
-X_train, y, bin_idx_train, bins, t = tf.get_tau_EZ_binned(n_days, name, n_bins)
+X_train, dE, bin_idx_dE, bins_dE, t = tf.get_tau_EZ_binned(n_days, 'dE', n_bins)
+#assuming the same features
+_, dZ, bin_idx_dZ, bins_dZ, _ = tf.get_tau_EZ_binned(n_days, 'dZ', n_bins)
+
+#make one data vector (per sample) of size n_softmax*n_bins
+bin_idx_train = np.concatenate([bin_idx_dE, bin_idx_dZ], axis = 1)
 
 N = t.size
 
@@ -27,12 +33,12 @@ train = True
 
 if train == True:
 
-    ann = NN.ANN(X = X_train, y = bin_idx_train, alpha = 0.001, decay_rate = 0.9, decay_step=10**5, n_out = n_bins, loss = 'cross_entropy', \
-                 lamb = 0.0, n_layers = 6, n_neurons=128, activation = 'hard_tanh', activation_out = 'linear', \
-                 standardize_y = False, batch_size=1024, name=name, save=True, aux_vars={'y':y, 'bins':bins})
+    ann = NN.ANN(X = X_train, y = bin_idx_train, alpha = 0.001, decay_rate = 0.9, decay_step=10**5, n_out = n_bins*n_softmax, loss = 'cross_entropy', \
+                 lamb = 0.0, n_layers = 3, n_neurons=128, activation = 'hard_tanh', activation_out = 'linear', n_softmax = n_softmax, \
+                 standardize_y = False, batch_size=1024, name=name, save=True, aux_vars={'dE':dE, 'dZ':dZ, 'bins_dE':bins_dE, 'bins_dZ':bins_dZ})
     ann.get_n_weights()
 
-    ann.train(100000, store_loss=True)
+    ann.train(10000, store_loss=True)
     
     if len(ann.loss_vals) > 0:
         fig_loss = plt.figure()
@@ -46,7 +52,7 @@ else:
 #compute the number of misclassification
 ########################################
 
-ann.compute_misclass_softmax()
+#ann.compute_misclass_softmax()
 
 #############
 #plot results
@@ -70,5 +76,5 @@ ann.compute_misclass_softmax()
 #
 #ax1.legend()
 #plt.tight_layout()
- 
+
 plt.show()

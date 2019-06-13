@@ -7,7 +7,7 @@ class ANN:
     def __init__(self, X, y, alpha = 0.001, decay_rate = 1.0, decay_step = 10**5, beta1 = 0.9, beta2 = 0.999, lamb = 0.0, \
                  phi = 0.0, lamb_J = 0.0, n_out = 1, \
                  param_specific_learn_rate = True, loss = 'squared', activation = 'tanh', activation_out = 'linear', \
-                 n_layers = 2, n_neurons = 16, \
+                 n_softmax = 1, n_layers = 2, n_neurons = 16, \
                  bias = True, neuron_based_compute = False, batch_size = 1, save = True, load=False, name='ANN', on_gpu = False, \
                  standardize_X = True, standardize_y = True, aux_vars = {}):
 
@@ -93,6 +93,9 @@ class ANN:
         #activation function of the output layer
         self.activation_out = activation_out
         
+        #number of sofmax layers
+        self.n_softmax = n_softmax
+        
         #save the neural network after training
         self.save = save
         self.name = name
@@ -124,7 +127,7 @@ class ANN:
         
         #add the output layer
         self.layers.append(Layer(self.n_out, self.n_layers, self.n_layers, self.activation_out, \
-                                 self.loss, batch_size=batch_size, lamb = lamb,\
+                                 self.loss, batch_size=batch_size, lamb = lamb, n_softmax=n_softmax, \
                                  neuron_based_compute = neuron_based_compute, on_gpu=on_gpu))
         
         self.connect_layers()
