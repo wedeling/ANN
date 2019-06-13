@@ -66,38 +66,38 @@ ann.train(5000, store_loss=True, check_derivative=False)
 t1 = time.time()
 print(t1-t0) 
 
-if len(ann.loss_vals) > 0:
-    fig_loss = plt.figure()
-    plt.yscale('log')
-    plt.plot(ann.loss_vals)
-
-##############
-#plot the data
-##############
-
-fig = plt.figure()
-ax = fig.add_subplot(121, title=r'$\Delta E'+'\;\mathrm{data}$', xlabel=r'$t$')
-ax.plot(t[0:I], y[0:I], 'b+')
-ax.plot(t[I:], y[I:], 'r+')
+#if len(ann.loss_vals) > 0:
+#    fig_loss = plt.figure()
+#    plt.yscale('log')
+#    plt.plot(ann.loss_vals)
 #
-########################################
-##plot the ANN regression after training
-########################################
-
-ax = fig.add_subplot(122, title='Neural net prediction', xlabel=r'$t$')
-
-y_hat = np.zeros(N)
-
-#if standardize = True in ANN
-X_pred = (X - ann.X_mean)/ann.X_std
-#X_pred = X
-
-for i in range(N):
-    y_hat[i] = ann.feed_forward(X_pred[i].reshape([1,N_feat]))
-    
-ax.plot(t[0:I], y_hat[0:I], 'b+')
-ax.plot(t[I:], y_hat[I:], 'r+')
-
-plt.tight_layout()
+###############
+##plot the data
+###############
+#
+#fig = plt.figure()
+#ax = fig.add_subplot(121, title=r'$\Delta E'+'\;\mathrm{data}$', xlabel=r'$t$')
+#ax.plot(t[0:I], y[0:I], 'b+')
+#ax.plot(t[I:], y[I:], 'r+')
+##
+#########################################
+###plot the ANN regression after training
+#########################################
+#
+#ax = fig.add_subplot(122, title='Neural net prediction', xlabel=r'$t$')
+#
+#y_hat = np.zeros(N)
+#
+##if standardize = True in ANN
+#X_pred = (X - ann.X_mean)/ann.X_std
+##X_pred = X
+#
+#for i in range(N):
+#    y_hat[i] = ann.feed_forward(X_pred[i].reshape([1,N_feat]))
+#    
+#ax.plot(t[0:I], y_hat[0:I], 'b+')
+#ax.plot(t[I:], y_hat[I:], 'r+')
+#
+#plt.tight_layout()
 
 plt.show()

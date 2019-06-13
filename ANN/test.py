@@ -12,10 +12,6 @@ from scipy import stats
 
 plt.close('all')
 
-###################################
-#generate synthetic regression data
-###################################
-
 #number of data points
 n_days = 8*365
 
@@ -26,9 +22,10 @@ X, y, t = tf.get_tau_EZ_regres(n_days, name)
 N = t.size
 
 N_bins = 10
-bins = np.linspace(np.min(y), np.max(y), N_bins)
-
+bins = np.linspace(np.min(y), np.max(y), N_bins+1)
 count, _, binnumbers = stats.binned_statistic(y, np.zeros(y.size), statistic='count', bins=bins)
+
+binnumbers2 = np.digitize(y, bins)
 
 unique_binnumbers = np.unique(binnumbers)
 
@@ -38,7 +35,7 @@ ax = fig.add_subplot(111)
 for i in unique_binnumbers:
     idx = np.where(binnumbers == i)[0]
     
-    ax.plot(X[idx, 5], X[idx, 0], 'o', label=i)
+    ax.plot(X[idx, 6], X[idx, 0], 'o', label=i)
     
 leg = plt.legend()
 leg.draggable(True)

@@ -15,6 +15,19 @@ import sys
 import json
 
 HOME = os.path.abspath(os.path.dirname(__file__))
+    
+###########################
+# load the reference data #
+###########################
+ 
+sim_ID = 'tau_EZ_manual'
+fname = HOME + '/samples/' + sim_ID + '_t_515.0.hdf5'
+
+h5f = h5py.File(fname, 'r')
+
+QoI = list(h5f.keys())
+
+print(QoI)
 
 Omega = 7.292*10**-5
 day = 24*60**2*Omega

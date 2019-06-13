@@ -4,11 +4,12 @@ from .Layer import Layer
 
 class ANN:
 
-    def __init__(self, X, y, alpha = 0.001, decay_rate = 1.0, decay_step = 10**4, beta1 = 0.9, beta2 = 0.999, lamb = 0.0, \
-                 phi = 0.0, lamb_J = 0.0, \
-                 param_specific_learn_rate = False, loss = 'squared', activation = 'tanh', n_layers = 2, n_neurons = 16, \
-                 bias = True, neuron_based_compute = False, batch_size = 1, save = True, name='ANN', on_gpu = False, \
-                 standardize = True):
+    def __init__(self, X, y, alpha = 0.001, decay_rate = 1.0, decay_step = 10**5, beta1 = 0.9, beta2 = 0.999, lamb = 0.0, \
+                 phi = 0.0, lamb_J = 0.0, n_out = 1, \
+                 param_specific_learn_rate = True, loss = 'squared', activation = 'tanh', activation_out = 'linear', \
+                 n_layers = 2, n_neurons = 16, \
+                 bias = True, neuron_based_compute = False, batch_size = 1, save = True, load=False, name='ANN', on_gpu = False, \
+                 standardize_X = True, standardize_y = True, aux_vars = {}):
 
         #the features
         self.X = X
@@ -27,28 +28,23 @@ class ANN:
         
         #use either numpy or cupy via xp based on the on_gpu flag
         global xp
-        print('===============================')
         if on_gpu == False:
-            print('Numpy-based computation')
             import numpy as xp
         else:
-            print('Cupy-based computation')
             import cupy as xp
             
-        print('Number of layers =', n_layers)
-        print('Number of neurons per hidden layer =', n_neurons)
-        print('Activation =', activation)
-        print('===============================')
+        self.on_gpu = on_gpu
 
         #standardize the training data
-        if standardize == True:
+        if standardize_X == True:
             
             self.X_mean = xp.mean(X, axis = 0)
             self.X_std = xp.std(X, axis = 0)
+            self.X = (X - self.X_mean)/self.X_std
+        
+        if standardize_y == True:
             self.y_mean = xp.mean(y, axis = 0)
             self.y_std = xp.std(y, axis = 0)
-            
-            self.X = (X - self.X_mean)/self.X_std
             self.y = (y - self.y_mean)/self.y_std
         
         #number of layers (hidden + output)
@@ -58,7 +54,8 @@ class ANN:
         self.n_neurons = n_neurons
 
         #number of output neurons
-        self.n_out = 1
+        self.n_out = n_out
+        self.out_idx = np.arange(n_out)
         
         #use bias neurons
         self.bias = bias
@@ -93,9 +90,15 @@ class ANN:
         #activation function of the hidden layers
         self.activation = activation
         
+        #activation function of the output layer
+        self.activation_out = activation_out
+        
         #save the neural network after training
         self.save = save
         self.name = name
+        
+        #ant additional variables/dicts etc that must be stored in the ann object
+        self.aux_vars = aux_vars
         
         #determines where to compute the neuron outputs and gradients 
         #True: locally at the neuron, False: on the Layer level in one shot via linear algebra)
@@ -120,11 +123,13 @@ class ANN:
                                      neuron_based_compute=neuron_based_compute, on_gpu=on_gpu))
         
         #add the output layer
-        self.layers.append(Layer(self.n_out, self.n_layers, self.n_layers, \
-                                 'linear', self.loss, batch_size=batch_size, lamb = lamb,\
+        self.layers.append(Layer(self.n_out, self.n_layers, self.n_layers, self.activation_out, \
+                                 self.loss, batch_size=batch_size, lamb = lamb,\
                                  neuron_based_compute = neuron_based_compute, on_gpu=on_gpu))
         
         self.connect_layers()
+        
+        self.print_network_info()
    
     #connect each layer in the NN with its previous and the next      
     def connect_layers(self):
@@ -155,7 +160,37 @@ class ANN:
                 self.layers[i].compute_output(batch_size)
             
         return self.layers[-1].h
+    
+    #get the output of the softmax layer (so far: only works for batch_size = 1)
+    def get_softmax(self, X_i):
+        
+        h = self.feed_forward(X_i, batch_size = 1)
+        
+        #soft max values
+        o_i = np.exp(h)/np.sum(np.exp(h), axis=0)
+        
+        #return values and index of highest probability
+        return o_i.flatten(), np.argmax(o_i)
  
+    #get the output of the softmax layer, where only neuron idx and its direct
+    #neighbors are considered
+    #(so far: only works for batch_size = 1)
+    def get_local_softmax(self, X_i, idx):
+        
+        h = self.feed_forward(X_i, batch_size = 1)
+        
+        #soft max values
+        o_i = np.exp(h)
+        
+        #exclude all but neurons idx - 1, idx and idx + 1
+        not_neighbors = np.setdiff1d(self.out_idx, [idx-1, idx, idx+1])
+        o_i[not_neighbors] = 0.0
+        
+        o_i = o_i/np.sum(o_i, axis=0)
+        
+        #return values and index of highest probability
+        return o_i.flatten(), np.argmax(o_i)
+    
     #compute jacobian of the neural net via back propagation
     def jacobian(self, X_i, batch_size = 1, feed_forward = False):
         
@@ -285,7 +320,7 @@ class ANN:
             alpha = self.alpha*self.decay_rate**(np.int(i/self.decay_step))
 
             #run the batch
-            self.batch(self.X[rand_idx], self.y[rand_idx], alpha=alpha, beta1=self.beta1, beta2=self.beta2, t=i+1)
+            self.batch(self.X[rand_idx], self.y[rand_idx].T, alpha=alpha, beta1=self.beta1, beta2=self.beta2, t=i+1)
             
             if check_derivative == True and np.mod(i, 1000) == 0:
                 self.check_derivative(self.X[rand_idx], self.y[rand_idx], 10)
@@ -337,6 +372,8 @@ class ANN:
         file = open(path + name + '.pickle', 'rb')
         self.__dict__ = pickle.load(file)
         file.close()
+        
+        self.print_network_info()
         
     def set_batch_size(self, batch_size):
         
@@ -405,6 +442,34 @@ class ANN:
                 
         print('Number of misclassifications = ', n_misclass)
         
+    #compute the number of misclassifications for a sofmax layer
+    def compute_misclass_softmax(self, X = [], y = []):
+        
+        n_misclass = 0.0
+        
+        #compute misclassification error of the training set if X and y are not set
+        if y == []:
+            print('Computing number of misclassifications wrt training data...')
+            X = self.X
+            y = self.y
+        else:
+            print('Computing number of misclassifications wrt test data...')
+            
+        n_samples = X.shape[0]
+        
+        for i in range(X.shape[0]):
+            o_i, idx1 = self.get_softmax(X[i].reshape([1, self.n_in]))
+            
+            idx2 = np.where(y[i] == 1.0)[0]
+
+            if idx1 != idx2:
+                n_misclass += 1
+                
+        print('Number of misclassifications =', n_misclass)
+        print('Misclassification percentage =', n_misclass/n_samples*100, '%')
+        
+        return n_misclass/n_samples
+        
     #return the number of weights
     def get_n_weights(self):
         
@@ -416,3 +481,17 @@ class ANN:
         print('This neural network has', n_weights, 'weights.')
 
         return n_weights
+
+    def print_network_info(self):
+        print('===============================')
+        print('Neural net parameters')
+        print('===============================')
+        print('Number of layers =', self.n_layers)
+        print('Number of features =', self.n_in)
+        print('Loss function =', self.loss)
+        print('Number of neurons per hidden layer =', self.n_neurons)
+        print('Number of output neurons =', self.n_out)
+        print('Activation hidden layers =', self.activation)
+        print('Activation output layer =', self.activation_out)
+        print('On GPU =', self.on_gpu)
+        print('===============================')

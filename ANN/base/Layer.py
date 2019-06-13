@@ -1,5 +1,5 @@
 from .Neuron import Neuron
-#import numpy as np
+import numpy as np
 
 class Layer:
     
@@ -151,6 +151,10 @@ class Layer:
                 self.L_i = xp.log(1.0 + xp.exp(-y_i*h))
             elif self.loss == 'squared':
                 self.L_i = (y_i - h)**2
+            elif self.loss == 'cross_entropy':
+                #compute values of the softmax layer
+                o_i = xp.exp(h)/xp.sum(np.exp(h), axis=0)
+                self.L_i = -xp.sum(y_i*np.log(o_i))
             else:
                 print('Cannot compute loss: unknown loss and/or activation function')
                 import sys; sys.exit()
@@ -184,6 +188,7 @@ class Layer:
             
             h = self.h
             
+            #for binary classification
             if self.loss == 'logistic' and self.activation == 'linear':
 
                 self.delta_ho = -y_i*xp.exp(-y_i*h)/(1.0 + xp.exp(-y_i*h))
@@ -191,6 +196,16 @@ class Layer:
             elif self.loss == 'squared' and self.activation == 'linear':
                 
                 self.delta_ho = -2.0*(y_i - h)
+                
+            #for multinomial classification
+            elif self.loss == 'cross_entropy':
+                
+                #compute values of the softmax layer
+                o_i = np.exp(h)/np.sum(np.exp(h), axis=0)
+                
+                #(see eq. 3.22 of Aggarwal book)
+                self.delta_ho = o_i - y_i               
+                
         else:
             print('Can only initialize delta_oo in output layer')
             import sys; sys.exit()
