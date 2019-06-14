@@ -170,10 +170,17 @@ class ANN:
         h = self.feed_forward(X_i, batch_size = 1)
         
         #soft max values
-        o_i = np.exp(h)/np.sum(np.exp(h), axis=0)
+        o_i = []
+        [o_i.append(xp.exp(h_i)/xp.sum(np.exp(h_i), axis=0)) for h_i in np.split(h, self.n_softmax)]
+        o_i = np.concatenate(o_i)
+        
+        #
+        idx_max = np.array([np.argmax(o_j) for o_j in np.split(o_i, self.n_softmax)])
+        
+        print(idx_max)
         
         #return values and index of highest probability
-        return o_i.flatten(), np.argmax(o_i)
+        return o_i.flatten(), idx_max
  
     #get the output of the softmax layer, where only neuron idx and its direct
     #neighbors are considered
