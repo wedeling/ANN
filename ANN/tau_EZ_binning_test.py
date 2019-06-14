@@ -29,16 +29,16 @@ N = t.size
 #train or load the ANN
 ######################
 
-train = True
+train = False
 
 if train == True:
 
-    ann = NN.ANN(X = X_train, y = bin_idx_train, alpha = 0.001, decay_rate = 0.9, decay_step=10**5, n_out = n_bins*n_softmax, loss = 'cross_entropy', \
-                 lamb = 0.0, n_layers = 3, n_neurons=128, activation = 'hard_tanh', activation_out = 'linear', n_softmax = n_softmax, \
-                 standardize_y = False, batch_size=1024, name=name, save=True, aux_vars={'dE':dE, 'dZ':dZ, 'bins_dE':bins_dE, 'bins_dZ':bins_dZ})
+    ann = NN.ANN(X = X_train, y = bin_idx_train, alpha = 0.001, decay_rate = 0.9, decay_step=10**4, n_out = n_bins*n_softmax, loss = 'cross_entropy', \
+                 lamb = 0.0, n_layers = 3, n_neurons=256, activation = 'hard_tanh', activation_out = 'linear', n_softmax = n_softmax, \
+                 standardize_y = False, batch_size=512, name=name, save=True, aux_vars={'dE':dE, 'dZ':dZ, 'bins_dE':bins_dE, 'bins_dZ':bins_dZ})
     ann.get_n_weights()
 
-    ann.train(10000, store_loss=True)
+    ann.train(50000, store_loss=True)
     
     if len(ann.loss_vals) > 0:
         fig_loss = plt.figure()
@@ -52,7 +52,7 @@ else:
 #compute the number of misclassification
 ########################################
 
-#ann.compute_misclass_softmax()
+ann.compute_misclass_softmax()
 
 #############
 #plot results

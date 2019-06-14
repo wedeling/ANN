@@ -174,33 +174,12 @@ class ANN:
         [o_i.append(xp.exp(h_i)/xp.sum(np.exp(h_i), axis=0)) for h_i in np.split(h, self.n_softmax)]
         o_i = np.concatenate(o_i)
         
-        #
+        #find max index for each softmax layer independently
         idx_max = np.array([np.argmax(o_j) for o_j in np.split(o_i, self.n_softmax)])
-        
-        print(idx_max)
         
         #return values and index of highest probability
         return o_i.flatten(), idx_max
- 
-    #get the output of the softmax layer, where only neuron idx and its direct
-    #neighbors are considered
-    #(so far: only works for batch_size = 1)
-    def get_local_softmax(self, X_i, idx):
-        
-        h = self.feed_forward(X_i, batch_size = 1)
-        
-        #soft max values
-        o_i = np.exp(h)
-        
-        #exclude all but neurons idx - 1, idx and idx + 1
-        not_neighbors = np.setdiff1d(self.out_idx, [idx-1, idx, idx+1])
-        o_i[not_neighbors] = 0.0
-        
-        o_i = o_i/np.sum(o_i, axis=0)
-        
-        #return values and index of highest probability
-        return o_i.flatten(), np.argmax(o_i)
-    
+   
     #compute jacobian of the neural net via back propagation
     def jacobian(self, X_i, batch_size = 1, feed_forward = False):
         
@@ -455,7 +434,7 @@ class ANN:
     #compute the number of misclassifications for a sofmax layer
     def compute_misclass_softmax(self, X = [], y = []):
         
-        n_misclass = 0.0
+        n_misclass = np.zeros(self.n_softmax)
         
         #compute misclassification error of the training set if X and y are not set
         if y == []:
@@ -467,13 +446,14 @@ class ANN:
             
         n_samples = X.shape[0]
         
-        for i in range(X.shape[0]):
-            o_i, idx1 = self.get_softmax(X[i].reshape([1, self.n_in]))
-            
-            idx2 = np.where(y[i] == 1.0)[0]
+        for i in range(n_samples):
+            o_i, max_idx_ann = self.get_softmax(X[i].reshape([1, self.n_in]))
+         
+            max_idx_data = np.array([np.where(y_j == 1.0)[0] for y_j in np.split(y[i], self.n_softmax)])
 
-            if idx1 != idx2:
-                n_misclass += 1
+            for j in range(self.n_softmax):
+                if max_idx_ann[j] != max_idx_data[j]:
+                    n_misclass[j] += 1
                 
         print('Number of misclassifications =', n_misclass)
         print('Misclassification percentage =', n_misclass/n_samples*100, '%')
