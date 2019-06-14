@@ -322,7 +322,7 @@ tau_Z_max = 1.0
 state_store = False      #store the state at the end
 restart = True           #restart from prev state
 store = True             #store data
-plot = False             #plot results while running, requires drawnow package
+plot = True              #plot results while running, requires drawnow package
 compute_ref = True       #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
 
 eddy_forcing_type = 'tau_ortho_ann'  #which eddy forcing to use (tau_ortho, tau_ortho_ann, exact, unparam)
@@ -336,29 +336,47 @@ store_ID = sim_ID + '_' + input_file
 
 if eddy_forcing_type == 'tau_ortho_ann':
 
-    #create empty ANN object
-    dE_ann = NN.ANN(X = np.zeros(10), y = np.zeros(1))
-    #load trained ann
-    dE_ann.load_ANN(name='dE_T2')
+#    #create empty ANN object
+#    dE_ann = NN.ANN(X = np.zeros(10), y = np.zeros(1))
+#    #load trained ann
+#    dE_ann.load_ANN(name='dE_T2')
+#
+#    #create empty ANN object
+#    dZ_ann = NN.ANN(X = np.zeros(10), y = np.zeros(1))
+#    #load trained ann
+#    dZ_ann.load_ANN(name='dZ_T2')
+#    
+#    #NOTE: making the assumption here that both ANNs use the same features
+#    X_mean = dE_ann.X_mean
+#    X_std = dE_ann.X_std
+#    
+#    #number of featues
+#    n_feat = dE_ann.n_in
+#    
+#    #reference data for resampling
+#    r_dE = dE_ann.aux_vars['y']
+#    bins_dE = dE_ann.aux_vars['bins']
+#    r_dZ = dZ_ann.aux_vars['y']
+#    bins_dZ = dZ_ann.aux_vars['bins']
 
     #create empty ANN object
-    dZ_ann = NN.ANN(X = np.zeros(10), y = np.zeros(1))
+    dE_dZ_ann = NN.ANN(X = np.zeros(10), y = np.zeros(1))
     #load trained ann
-    dZ_ann.load_ANN(name='dZ_T2')
-    
-    #NOTE: making the assumption here that both ANNs use the same features
-    X_mean = dE_ann.X_mean
-    X_std = dE_ann.X_std
-    
-    #number of featues
-    n_feat = dE_ann.n_in
-    
+    dE_dZ_ann.load_ANN(name='dE_dZ')
+
     #reference data for resampling
-    r_dE = dE_ann.aux_vars['y']
-    bins_dE = dE_ann.aux_vars['bins']
-    r_dZ = dZ_ann.aux_vars['y']
-    bins_dZ = dZ_ann.aux_vars['bins']
-    
+    r_dE = dE_dZ_ann.aux_vars['dE']
+    bins_dE = dE_dZ_ann.aux_vars['bins_dE']
+    r_dZ = dE_dZ_ann.aux_vars['dZ']
+    bins_dZ = dE_dZ_ann.aux_vars['bins_dZ']
+
+    #NOTE: making the assumption here that both ANNs use the same features
+    X_mean = dE_dZ_ann.X_mean
+    X_std = dE_dZ_ann.X_std
+
+    #number of featues
+    n_feat = dE_dZ_ann.n_in
+        
     #bin samplers
     dE_sampler = binning.SimpleBin(r_dE, bins_dE)
     dZ_sampler = binning.SimpleBin(r_dZ, bins_dZ)
@@ -497,21 +515,13 @@ for n in range(n_steps):
 
         #standardize by data mean and std if standardize flag was set to True during ann training
         X_feat = (X_feat - X_mean)/X_std
- 
-#        if n == 0:       
-#            _, idx_max_dE_n = dE_ann.get_softmax(X_feat.reshape([1, n_feat]))
-#            _, idx_max_dZ_n = dZ_ann.get_softmax(X_feat.reshape([1, n_feat]))
-#        
-#        o_i, idx_max_dE = dE_ann.get_local_softmax(X_feat.reshape([1, n_feat]), idx_max_dE_n)
-#        _, idx_max_dZ = dZ_ann.get_local_softmax(X_feat.reshape([1, n_feat]), idx_max_dZ_n)
-#       
-#        idx_max_dE_n = idx_max_dE
-#        idx_max_dZ_n = idx_max_dZ
 
-        _, idx_max_dE = dE_ann.get_softmax(X_feat.reshape([1, n_feat]))
-        _, idx_max_dZ = dZ_ann.get_softmax(X_feat.reshape([1, n_feat]))
+#        _, idx_max_dE = dE_ann.get_softmax(X_feat.reshape([1, n_feat]))
+#        _, idx_max_dZ = dZ_ann.get_softmax(X_feat.reshape([1, n_feat]))
         
-        r = [dE_sampler.draw(idx_max_dE), dZ_sampler.draw(idx_max_dZ)]
+        _, idx_max = dE_dZ_ann.get_softmax(X_feat.reshape([1, n_feat]))
+        
+        r = [dE_sampler.draw(idx_max[0]), dZ_sampler.draw(idx_max[1])]
         
         r_tau_E, r_tau_Z = get_surrogate_tau_src_EZ(w_hat_n_LF, r, 1.0, 1.0)
         
