@@ -311,6 +311,9 @@ class ANN:
             #run the batch
             self.batch(self.X[rand_idx], self.y[rand_idx].T, alpha=alpha, beta1=self.beta1, beta2=self.beta2, t=i+1)
             
+            print(self.X[rand_idx].shape)
+            print(self.y[rand_idx].T.shape)
+            
             if check_derivative == True and np.mod(i, 1000) == 0:
                 self.check_derivative(self.X[rand_idx], self.y[rand_idx], 10)
             
