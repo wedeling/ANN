@@ -21,8 +21,9 @@ HOME = os.path.abspath(os.path.dirname(__file__))
 ###########################
 Omega = 7.292*10**-5
 day = 24*60**2*Omega
-sim_ID = 'tau_EZ_T4'
+sim_ID = 'tau_EZ_T5'
 t_end = (250.0 + 4*365.)*day 
+burn = 0#np.int(365*day)
 
 fig = plt.figure(figsize=[8, 4])
 ax1 = fig.add_subplot(121, xlabel=r'energy', yticks = [])
@@ -65,8 +66,8 @@ try:
 #    #ax1.plot(x_E_UP, pdf_E_UP, ':k', label=r'$\mathrm{unparam.}$')
 #    #ax2.plot(x_Z_UP, pdf_Z_UP, ':k', label=r'$\mathrm{unparam.}$')
 
-    ax1.hist([h5f['e_n_LF'][:], h5f['e_n_HF'][:]], 20, label=[r'$\mathrm{reduced}$', r'$\mathrm{reference}$'])
-    ax2.hist([h5f['z_n_LF'][:], h5f['z_n_HF'][:]], 20, label=[r'$\mathrm{reduced}$', r'$\mathrm{reference}$'])
+    ax1.hist([h5f['e_n_LF'][burn:], h5f['e_n_HF'][burn:]], 20, label=[r'$\mathrm{reduced}$', r'$\mathrm{reference}$'])
+    ax2.hist([h5f['z_n_LF'][burn:], h5f['z_n_HF'][burn:]], 20, label=[r'$\mathrm{reduced}$', r'$\mathrm{reference}$'])
 
     ax1.legend(loc=0)
    

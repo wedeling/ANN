@@ -348,7 +348,7 @@ plot = True             #plot results while running, requires drawnow package
 compute_ref = True       #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
 
 eddy_forcing_type = 'tau_ortho_ann'  #which eddy forcing to use (tau_ortho, tau_ortho_ann, exact, unparam)
-input_file = 'T4'
+input_file = 'T5'
 
 store_ID = sim_ID + '_' + input_file 
 
@@ -384,7 +384,7 @@ if eddy_forcing_type == 'tau_ortho_ann':
     #create empty ANN object
     dE_dZ_ann = NN.ANN(X = np.zeros(10), y = np.zeros(1))
     #load trained ann
-    dE_dZ_ann.load_ANN(name='ANN')
+    dE_dZ_ann.load_ANN(name='tau_EZ_4years_7feat')
     
     #reset the batch size for both the ANN and all Layer objects
     dE_dZ_ann.batch_size = 1    
@@ -545,7 +545,7 @@ for n in range(n_steps):
         #EF_hat = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime
         
         #features
-        X_feat = np.array([z_n_LF, e_n_LF, u_n_LF, s_n_LF, v_n_LF, o_n_LF, sprime_n_LF, zprime_n_LF])
+        X_feat = np.array([z_n_LF, e_n_LF, u_n_LF, s_n_LF, v_n_LF, sprime_n_LF, zprime_n_LF])
 
         if n == 0:
             #data mean
