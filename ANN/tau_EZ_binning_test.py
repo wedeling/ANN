@@ -10,13 +10,14 @@ plt.close('all')
 ###################################
 
 #number of data points
-n_days = 365*8
+n_days = 4*365 
 
 #get the data
-name = 'dE_dZ_full'
+name = 'tau_EZ_4years_7feat'
 n_softmax = 2
 n_bins = 10
 X_train, dE, bin_idx_dE, bins_dE, t = tf.get_tau_EZ_binned(n_days, 'dE', n_bins)
+
 #assuming the same features
 _, dZ, bin_idx_dZ, bins_dZ, _ = tf.get_tau_EZ_binned(n_days, 'dZ', n_bins)
 
@@ -38,7 +39,7 @@ if train == True:
                  standardize_y = False, batch_size=512, name=name, save=True, aux_vars={'dE':dE, 'dZ':dZ, 'bins_dE':bins_dE, 'bins_dZ':bins_dZ})
     ann.get_n_weights()
 
-    ann.train(100000, store_loss=True)
+    ann.train(50000, store_loss=True)
     
     if len(ann.loss_vals) > 0:
         fig_loss = plt.figure()

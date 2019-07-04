@@ -208,6 +208,14 @@ def get_w_hat_prime(w_hat_n):
 def corr_coef(X, Y):
     return np.mean((X - np.mean(X))*(Y - np.mean(Y)))/(np.std(X)*np.std(Y))
 
+#recursive formulas for the mean and variance
+def recursive_moments(X_np1, mu_n, sigma2_n, N):
+
+    mu_np1 = mu_n + (X_np1 - mu_n)/(N+1)
+
+    sigma2_np1 = sigma2_n + mu_n**2 - mu_np1**2 + (X_np1**2 - sigma2_n - mu_n**2)/(N+1)
+
+    return mu_np1, sigma2_np1
 
 ###########################
 # M A I N   P R O G R A M #
@@ -281,9 +289,11 @@ mu = 1.0/(day*decay_time_mu)
 
 #start, end time, end time of data (training period), time step
 t = 250.0*day
-t_end = t + 8*365*day
+t_end = t + 4*365*day
+t_on_the_fly =  0. #t + 2*365*day
 dt = 0.01
 n_steps = np.floor((t_end-t)/dt).astype('int')
+n_on_the_fly = np.floor((t_on_the_fly-t)/dt).astype('int')
 
 #############
 # USER KEYS #
@@ -334,11 +344,11 @@ tau_Z_max = 1.0
 state_store = False      #store the state at the end
 restart = True           #restart from prev state
 store = True             #store data
-plot = False             #plot results while running, requires drawnow package
+plot = True             #plot results while running, requires drawnow package
 compute_ref = True       #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
 
 eddy_forcing_type = 'tau_ortho_ann'  #which eddy forcing to use (tau_ortho, tau_ortho_ann, exact, unparam)
-input_file = 'T2_2'
+input_file = 'T4'
 
 store_ID = sim_ID + '_' + input_file 
 
@@ -374,7 +384,7 @@ if eddy_forcing_type == 'tau_ortho_ann':
     #create empty ANN object
     dE_dZ_ann = NN.ANN(X = np.zeros(10), y = np.zeros(1))
     #load trained ann
-    dE_dZ_ann.load_ANN(name='dE_dZ_full')
+    dE_dZ_ann.load_ANN(name='ANN')
     
     #reset the batch size for both the ANN and all Layer objects
     dE_dZ_ann.batch_size = 1    
@@ -482,6 +492,8 @@ j = 0; j2 = 0; idx = 0;
 
 T = []; R_DE = []; R_DZ = []; R_DE_tilde = []; R_DZ_tilde = []
 
+test = []; 
+
 fig = plt.figure(figsize=[10, 5])
 
 #time loop
@@ -522,7 +534,7 @@ for n in range(n_steps):
     #compute S' and Z'
     sprime_n_LF = e_n_LF**2/z_n_LF - s_n_LF
     zprime_n_LF = z_n_LF - e_n_LF**2/s_n_LF
-
+    
     ##############
 
     #exact orthogonal pattern surrogate
@@ -535,8 +547,15 @@ for n in range(n_steps):
         #features
         X_feat = np.array([z_n_LF, e_n_LF, u_n_LF, s_n_LF, v_n_LF, o_n_LF, sprime_n_LF, zprime_n_LF])
 
-        #standardize by data mean and std if standardize flag was set to True during ann training
-        X_feat = (X_feat - X_mean)/X_std
+        if n == 0:
+            #data mean
+            mu_n = X_mean 
+            sigma2_n = X_std**2
+        else:
+            #compute running mean
+            mu_n, sigma2_n = recursive_moments(X_feat, mu_n, sigma2_n, n+1)
+        
+        X_feat = (X_feat - mu_n)/sigma2_n**0.5
         
         #the dE, dZ wrt the CURRENT LF model
         dE_train = e_n_HF - e_n_LF
@@ -546,17 +565,22 @@ for n in range(n_steps):
         #dE_train = r_dE[n]
         #dZ_train = r_dZ[n]
         
-        _, _, binnumber_dE = stats.binned_statistic(dE_train, np.zeros(1), bins=bins_dE)
-        _, _, binnumber_dZ = stats.binned_statistic(dZ_train, np.zeros(1), bins=bins_dZ)
-
-        y_dE = np.zeros(n_bins)
-        y_dE[dE_mapping[binnumber_dE]] = 1.0
-        y_dZ = np.zeros(n_bins)                
-        y_dZ[dZ_mapping[binnumber_dZ]] = 1.0
-        
-        y_dE_dZ = np.concatenate([y_dE, y_dZ])
-        
-        dE_dZ_ann.batch(X_feat.reshape([1, n_feat]), y_dE_dZ.reshape([2*n_bins, 1]))        
+        if n <= n_on_the_fly:
+            
+            _, _, binnumber_dE = stats.binned_statistic(dE_train, np.zeros(1), bins=bins_dE)
+            _, _, binnumber_dZ = stats.binned_statistic(dZ_train, np.zeros(1), bins=bins_dZ)
+    
+            y_dE = np.zeros(n_bins)
+            y_dE[dE_mapping[binnumber_dE]] = 1.0
+            y_dZ = np.zeros(n_bins)                
+            y_dZ[dZ_mapping[binnumber_dZ]] = 1.0
+            
+            y_dE_dZ = np.concatenate([y_dE, y_dZ])
+            
+            dE_dZ_ann.batch(X_feat.reshape([1, n_feat]), y_dE_dZ.reshape([2*n_bins, 1]))
+            
+            if np.mod(n, np.int(day/dt)) == 0:
+                print('Performing on-the-fly back propagation on', n, 'out of', n_on_the_fly, 'steps.')
         
 #        _, idx_max_dE = dE_ann.get_softmax(X_feat.reshape([1, n_feat]))
 #        _, idx_max_dZ = dZ_ann.get_softmax(X_feat.reshape([1, n_feat]))
@@ -606,7 +630,7 @@ for n in range(n_steps):
         
         print('e_n_HF: %.4f' % e_n_HF, 'z_n_HF: %.4f' % z_n_HF, 's_n_HF: %.4f' % s_n_HF)
         print('e_n_LF: %.4f' % e_n_LF, 'z_n_LF: %.4f' % z_n_LF, 's_n_LF: %.4f' % s_n_LF)
-
+        
         drawnow(draw_2w)
         
     #store samples to dict

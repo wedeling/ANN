@@ -21,8 +21,8 @@ HOME = os.path.abspath(os.path.dirname(__file__))
 ###########################
 Omega = 7.292*10**-5
 day = 24*60**2*Omega
-sim_ID = 'tau_EZ_T2_2'
-t_end = (250.0 + 8*365.)*day 
+sim_ID = 'tau_EZ_T4'
+t_end = (250.0 + 4*365.)*day 
 
 fig = plt.figure(figsize=[8, 4])
 ax1 = fig.add_subplot(121, xlabel=r'energy', yticks = [])
@@ -67,6 +67,10 @@ try:
 
     ax1.hist([h5f['e_n_LF'][:], h5f['e_n_HF'][:]], 20, label=[r'$\mathrm{reduced}$', r'$\mathrm{reference}$'])
     ax2.hist([h5f['z_n_LF'][:], h5f['z_n_HF'][:]], 20, label=[r'$\mathrm{reduced}$', r'$\mathrm{reference}$'])
+
+    ax1.legend(loc=0)
+   
+    plt.tight_layout()
 
     fig = plt.figure()
     plt.subplot(121, title=r'$\Delta E$', xlabel=r'$t$')
