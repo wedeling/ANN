@@ -322,7 +322,7 @@ tau_Z_max = 1.0
 state_store = False      #store the state at the end
 restart = True           #restart from prev state
 store = True             #store data
-plot = True              #plot results while running, requires drawnow package
+plot = False              #plot results while running, requires drawnow package
 compute_ref = True       #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
 
 eddy_forcing_type = 'tau_ortho_ann'  #which eddy forcing to use (tau_ortho, tau_ortho_ann, exact, unparam)

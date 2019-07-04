@@ -1,4 +1,4 @@
-def get_pde(X, Npoints = 300):
+def get_pde(X, Npoints = 100):
 
     kernel = stats.gaussian_kde(X)
     x = np.linspace(np.min(X), np.max(X), Npoints)
@@ -19,31 +19,23 @@ HOME = os.path.abspath(os.path.dirname(__file__))
 ###########################
 # load the reference data #
 ###########################
- 
-sim_ID = 'tau_EZ_manual'
-fname = HOME + '/samples/' + sim_ID + '_t_515.0.hdf5'
-
-h5f = h5py.File(fname, 'r')
-
-QoI = list(h5f.keys())
-
-print(QoI)
-
 Omega = 7.292*10**-5
 day = 24*60**2*Omega
-sim_ID = 'tau_EZ'
+sim_ID = 'tau_EZ_T2_2'
 t_end = (250.0 + 8*365.)*day 
 
 fig = plt.figure(figsize=[8, 4])
 ax1 = fig.add_subplot(121, xlabel=r'energy', yticks = [])
 ax2 = fig.add_subplot(122, xlabel=r'enstropy', yticks = [])
 
-fpath = sys.argv[1]
-fp = open(fpath, 'r')
-N_surr = int(fp.readline())
-flags = json.loads(fp.readline())
+#fpath = sys.argv[1]
+#fp = open(fpath, 'r')
+#N_surr = int(fp.readline())
+#flags = json.loads(fp.readline())
+#
+#fname = HOME + '/samples/' + sim_ID + '_' + flags['input_file']  + '_t_' + str(np.around(t_end/day,1)) + '.hdf5'
 
-fname = HOME + '/samples/' + sim_ID + '_' + flags['input_file']  + '_t_' + str(np.around(t_end/day,1)) + '.hdf5'
+fname = HOME + '/samples/' + sim_ID + '_t_' + str(np.around(t_end/day,1)) + '.hdf5'
 fname_training = HOME + '/samples/tau_EZ_training_t_3170.0.hdf5'  
 
 print('Loading samples ', fname)
@@ -52,26 +44,44 @@ try:
     h5f = h5py.File(fname, 'r')
     print(h5f.keys())
 
-    x_E_LF, pdf_E_LF = get_pde(h5f['e_n_LF'])
-    x_Z_LF, pdf_Z_LF = get_pde(h5f['z_n_LF'])
+#    h5f = h5py.File(fname_training, 'r')
+#    print(h5f.keys())
+#
+#    x_E_LF, pdf_E_LF = get_pde(h5f['e_n_LF'])
+#    x_Z_LF, pdf_Z_LF = get_pde(h5f['z_n_LF'])
+#
+#    ax1.plot(x_E_LF, pdf_E_LF, label=r'$\mathrm{reduced}$')
+#    ax2.plot(x_Z_LF, pdf_Z_LF, label=r'$\mathrm{reduced}$')
+#   
+#    x_E_HF, pdf_E_HF = get_pde(h5f['e_n_HF'])
+#    x_Z_HF, pdf_Z_HF = get_pde(h5f['z_n_HF'])
+#
+#    #x_E_UP, pdf_E_UP = get_pde(h5f['e_n_UP'])
+#    #x_Z_UP, pdf_Z_UP = get_pde(h5f['z_n_UP'])
+#   
+#    ax1.plot(x_E_HF, pdf_E_HF, '--k', label=r'$\mathrm{reference}$')
+#    ax2.plot(x_Z_HF, pdf_Z_HF, '--k', label=r'$\mathrm{reference}$')
+#
+#    #ax1.plot(x_E_UP, pdf_E_UP, ':k', label=r'$\mathrm{unparam.}$')
+#    #ax2.plot(x_Z_UP, pdf_Z_UP, ':k', label=r'$\mathrm{unparam.}$')
 
-    ax1.plot(x_E_LF, pdf_E_LF, label=r'$\mathrm{reduced}$')
-    ax2.plot(x_Z_LF, pdf_Z_LF, label=r'$\mathrm{reduced}$')
+    ax1.hist([h5f['e_n_LF'][:], h5f['e_n_HF'][:]], 20, label=[r'$\mathrm{reduced}$', r'$\mathrm{reference}$'])
+    ax2.hist([h5f['z_n_LF'][:], h5f['z_n_HF'][:]], 20, label=[r'$\mathrm{reduced}$', r'$\mathrm{reference}$'])
 
-    h5f = h5py.File(fname_training, 'r')
-    print(h5f.keys())
-    
-    x_E_HF, pdf_E_HF = get_pde(h5f['e_n_HF'])
-    x_Z_HF, pdf_Z_HF = get_pde(h5f['z_n_HF'])
-
-    #x_E_UP, pdf_E_UP = get_pde(h5f['e_n_UP'])
-    #x_Z_UP, pdf_Z_UP = get_pde(h5f['z_n_UP'])
-    
-    ax1.plot(x_E_HF, pdf_E_HF, '--k', label=r'$\mathrm{reference}$')
-    ax2.plot(x_Z_HF, pdf_Z_HF, '--k', label=r'$\mathrm{reference}$')
-
-    #ax1.plot(x_E_UP, pdf_E_UP, ':k', label=r'$\mathrm{unparam.}$')
-    #ax2.plot(x_Z_UP, pdf_Z_UP, ':k', label=r'$\mathrm{unparam.}$')
+    fig = plt.figure()
+    plt.subplot(121, title=r'$\Delta E$', xlabel=r'$t$')
+#    plt.plot(h5f['t'], h5f['r[0]'])
+#    plt.plot(h5f['t'], h5f['dE_train'], linewidth=4)
+    plt.plot(h5f['t'], h5f['e_n_LF'], 'r')
+    plt.plot(h5f['t'], h5f['e_n_HF'], 'b')
+    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+    plt.subplot(122, title=r'$\Delta Z$', xlabel=r'$t$')
+#    plt.plot(h5f['t'], h5f['r[1]'])
+#    plt.plot(h5f['t'], h5f['dZ_train'], linewidth=4)
+    plt.plot(h5f['t'], h5f['z_n_LF'], 'r')
+    plt.plot(h5f['t'], h5f['z_n_HF'], 'b')
+    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+    plt.tight_layout()
 
 except IOError:
     print('*****************************')
@@ -79,7 +89,7 @@ except IOError:
     print('*****************************')
 
 leg = plt.legend(loc=0)
-leg.draggable(True)
+leg.set_draggable(True)
 
 ax1.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
 ax2.ticklabel_format(style='sci', axis='x', scilimits=(0,0))

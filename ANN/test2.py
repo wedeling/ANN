@@ -78,12 +78,12 @@ def draw_w():
 
 def draw_2w():
     plt.subplot(121, title=r'$\Delta E$', xlabel=r'$t\;[day]$')
-    plt.plot(np.array(T)/day, R_DE)
-    plt.plot(np.array(T)/day, r_dE[0:n+1], linewidth=4)
+    plt.plot(np.array(T)/day, R_DE_tilde)
+    plt.plot(np.array(T)/day, R_DE, linewidth=4)
     plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
     plt.subplot(122, title=r'$\Delta Z$', xlabel=r'$t\;[day]$')
-    plt.plot(np.array(T)/day, R_DZ)
-    plt.plot(np.array(T)/day, r_dZ[0:n+1], linewidth=4)
+    plt.plot(np.array(T)/day, R_DZ_tilde)
+    plt.plot(np.array(T)/day, R_DZ, linewidth=4)
     plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
     plt.tight_layout()
 
@@ -281,9 +281,9 @@ mu = 1.0/(day*decay_time_mu)
 
 #start, end time, end time of data (training period), time step
 t = 250.0*day
-t_end = t + 50*day
+t_end = t + 8*365*day
 dt = 0.01
-n_steps = np.ceil((t_end-t)/dt).astype('int')
+n_steps = np.floor((t_end-t)/dt).astype('int')
 
 #############
 # USER KEYS #
@@ -297,6 +297,17 @@ plot_frame_rate = np.floor(1.0*day/dt).astype('int')
 corr_frame_rate = np.floor(0.25*day/dt).astype('int')
 #length of data array
 S = np.floor(n_steps/store_frame_rate).astype('int')
+
+"""
+REMOVE
+"""
+
+S -= 1
+n_steps -= 1
+
+"""
+THIS
+"""
 
 #user-specified parameter of tau_E and tau_Z terms
 tau_E_max = 1.0
@@ -323,11 +334,11 @@ tau_Z_max = 1.0
 state_store = False      #store the state at the end
 restart = True           #restart from prev state
 store = True             #store data
-plot = True              #plot results while running, requires drawnow package
+plot = False             #plot results while running, requires drawnow package
 compute_ref = True       #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
 
 eddy_forcing_type = 'tau_ortho_ann'  #which eddy forcing to use (tau_ortho, tau_ortho_ann, exact, unparam)
-input_file = 'T2'
+input_file = 'T2_2'
 
 store_ID = sim_ID + '_' + input_file 
 
@@ -363,7 +374,7 @@ if eddy_forcing_type == 'tau_ortho_ann':
     #create empty ANN object
     dE_dZ_ann = NN.ANN(X = np.zeros(10), y = np.zeros(1))
     #load trained ann
-    dE_dZ_ann.load_ANN(name='dE_dZ')
+    dE_dZ_ann.load_ANN(name='dE_dZ_full')
     
     #reset the batch size for both the ANN and all Layer objects
     dE_dZ_ann.batch_size = 1    
@@ -387,7 +398,11 @@ if eddy_forcing_type == 'tau_ortho_ann':
     #bin samplers
     dE_sampler = binning.SimpleBin(r_dE, bins_dE)
     dZ_sampler = binning.SimpleBin(r_dZ, bins_dZ)
-
+    
+    #mapping from empty to nearest non empty bin
+    dE_mapping = dE_sampler.mapping
+    dZ_mapping = dZ_sampler.mapping
+    
 ###############################
 # SPECIFY WHICH DATA TO STORE #
 ###############################
@@ -398,7 +413,7 @@ if eddy_forcing_type == 'tau_ortho_ann':
 QoI = ['z_n_HF', 'e_n_HF', \
        'z_n_LF', 'e_n_LF', 'u_n_LF', 's_n_LF', 'v_n_LF', 'o_n_LF', \
        'sprime_n_LF', 'zprime_n_LF', \
-       'tau_E', 'tau_Z', 't']
+       'tau_E', 'tau_Z', 't', 'r[0]', 'r[1]', 'dE_train', 'dZ_train']
 
 #PREDICTION DATA SET
 #QoI = ['z_n_LF', 'e_n_LF', 't']
@@ -465,7 +480,7 @@ norm_factor_LF = 1.0/(3.0/(2.0*dt) - nu_LF*k_squared + mu)  #for Low-Fidelity (L
 #some counters
 j = 0; j2 = 0; idx = 0;
 
-T = []; R_DE = []; R_DZ = []
+T = []; R_DE = []; R_DZ = []; R_DE_tilde = []; R_DZ_tilde = []
 
 fig = plt.figure(figsize=[10, 5])
 
@@ -524,20 +539,20 @@ for n in range(n_steps):
         X_feat = (X_feat - X_mean)/X_std
         
         #the dE, dZ wrt the CURRENT LF model
-        #dE_train = e_n_HF - e_n_LF
-        #dZ_train = z_n_HF - z_n_LF
+        dE_train = e_n_HF - e_n_LF
+        dZ_train = z_n_HF - z_n_LF
         
         #the dE, dZ wrt the TRAINING LF model
-        dE_train = r_dE[n+1]
-        dZ_train = r_dZ[n+1]
+        #dE_train = r_dE[n]
+        #dZ_train = r_dZ[n]
         
         _, _, binnumber_dE = stats.binned_statistic(dE_train, np.zeros(1), bins=bins_dE)
         _, _, binnumber_dZ = stats.binned_statistic(dZ_train, np.zeros(1), bins=bins_dZ)
 
         y_dE = np.zeros(n_bins)
-        y_dE[binnumber_dE - 1] = 1.0
+        y_dE[dE_mapping[binnumber_dE]] = 1.0
         y_dZ = np.zeros(n_bins)                
-        y_dZ[binnumber_dZ - 1] = 1.0
+        y_dZ[dZ_mapping[binnumber_dZ]] = 1.0
         
         y_dE_dZ = np.concatenate([y_dE, y_dZ])
         
@@ -554,8 +569,10 @@ for n in range(n_steps):
         
         EF_hat = -r_tau_E*psi_hat_n_prime - r_tau_Z*w_hat_n_prime
         
-        R_DE.append(r[0])
-        R_DZ.append(r[1])
+        R_DE_tilde.append(r[0])
+        R_DZ_tilde.append(r[1])
+        R_DE.append(dE_train)
+        R_DZ.append(dZ_train)
         
         T.append(t)
         
