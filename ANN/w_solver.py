@@ -66,6 +66,7 @@ def store_samples_hdf5():
     
     #store numpy sample arrays as individual datasets in the hdf5 file
     for q in QoI:
+        print(q)
         h5f_data.create_dataset(q, data = samples[q])
         
     h5f_data.close()
@@ -128,14 +129,10 @@ day = 24*60**2*Omega
 decay_time_nu = 5.0
 decay_time_mu = 90.0
 nu = 1.0/(day*Ncutoff**2*decay_time_nu)
+
+#same viscosity as high fidelity 
 nu_LF = 1.0/(day*Ncutoff**2*decay_time_nu)
 mu = 1.0/(day*decay_time_mu)
-
-#start, end time, end time of data (training period), time step
-t = 0.0*day
-t_end = t + 5.0*day
-dt = 0.01
-n_steps = np.floor((t_end-t)/dt).astype('int')
 
 #############
 # USER KEYS #
@@ -144,18 +141,23 @@ n_steps = np.floor((t_end-t)/dt).astype('int')
 #simulation name
 sim_ID = 'run1'
 
+#Specification of flags 
+state_store = True       #store the state at the end
+restart = False          #restart from prev stored state
+store = True             #store data
+store_ID = sim_ID + '_results'  
+
+#start, end time, end time of data (training period), time step
+t = 0.0*day
+t_end = 10.0*day
+dt = 0.01
+n_steps = np.floor((t_end-t)/dt).astype('int')
+
 #framerate of storing data
 store_frame_rate = np.floor(0.5*day/dt).astype('int')
 
 #length of data array
 S = np.floor(n_steps/store_frame_rate).astype('int')
-
-#Manual specification of flags 
-state_store = True       #store the state at the end
-restart = False          #restart from prev state
-store = True             #store data
-
-store_ID = sim_ID + '_results'  
 
 ###############################
 # SPECIFY WHICH DATA TO STORE #
@@ -163,7 +165,7 @@ store_ID = sim_ID + '_results'
 
 #QoI to store, First letter in caps implies an NxN field, otherwise a scalar 
 #name must equal variable name
-QoI = ['W_hat_n_LF', 'W_hat_n_LF', 'Ef_hat_nm1_exact', 't']
+QoI = ['W_hat_n_HF', 'W_hat_n_LF', 'Ef_hat_nm1_exact', 't']
 
 Q = len(QoI)
 
@@ -268,7 +270,7 @@ for n in range(n_steps):
 if state_store == True:
     
     keys = ['w_hat_nm1_HF', 'w_hat_n_HF', 'VgradW_hat_nm1_HF', \
-            'w_hat_nm1_LF', 'w_hat_n_LF', 'VgradW_hat_nm1_LF']
+            'w_hat_nm1_LF', 'w_hat_n_LF', 'VgradW_hat_nm1_LF', 't']
     
     if os.path.exists(HOME + '/restart') == False:
         os.makedirs(HOME + '/restart')
@@ -290,5 +292,13 @@ if state_store == True:
 #store the samples
 if store == True:
     store_samples_hdf5() 
+
+#plot final LF field + eddy forcing
+fig = plt.figure()
+ax = fig.add_subplot(121, title=r'vorticity')
+ax.contourf(x, y, np.fft.irfft2(w_hat_n_LF), 100)
+ax = fig.add_subplot(122, title=r'eddy forcing')
+ax.contourf(x, y, np.fft.irfft2(ef_hat_nm1_exact), 100)
+plt.tight_layout()
 
 plt.show()

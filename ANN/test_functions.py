@@ -205,5 +205,73 @@ def get_tau_EZ_binned(n_days, name, n_bins):
     
     return X, y, bin_idx, bins, t
 
+##############################################
+    
+def get_tau_EZ_binned_lagged(n_days, name, n_bins, n_lags):
+    
+    import os
+    import h5py
+    
+    HOME = os.path.abspath(os.path.dirname(__file__))
+    
+    ###########################
+    # load the reference data #
+    ###########################
+    
+    fname = HOME + '/samples/tau_EZ_training_t_3170.0.hdf5'
+    #fname = HOME + '/samples/tau_EZ_T4_t_1710.0.hdf5'
+    h5f = h5py.File(fname, 'r')
+    
+    QoI = list(h5f.keys())
+    
+    print(QoI)
+    
+    #time scale
+    Omega = 7.292*10**-5
+    day = 24*60**2*Omega
+    dt = 0.01
+    #N = h5f['e_n_LF'][:].size
+    N = np.int(n_days*day/dt) 
+    
+    sub = 1
+    
+    if name == 'dE':
+        y = h5f['e_n_HF'][n_lags:N:sub] - h5f['e_n_LF'][n_lags:N:sub]
+    else:
+        y = h5f['z_n_HF'][n_lags:N:sub] - h5f['z_n_LF'][n_lags:N:sub]
+   
+    N_feat = 7
+    X = np.zeros([y.size, N_feat, n_lags])
+    for i in range(n_lags):
+        begin = i
+        end = N - n_lags + i
+        X[:, 0, i] = h5f['z_n_LF'][begin:end:sub]
+        X[:, 1, i] = h5f['e_n_LF'][begin:end:sub]
+        X[:, 2, i] = h5f['u_n_LF'][begin:end:sub]
+        X[:, 3, i] = h5f['s_n_LF'][begin:end:sub]
+        X[:, 4, i] = h5f['v_n_LF'][begin:end:sub]
+        X[:, 5, i] = h5f['sprime_n_LF'][begin:end:sub]
+        X[:, 6, i] = h5f['zprime_n_LF'][begin:end:sub]
+        
+    X = X.reshape([y.size, N_feat*n_lags])
+    
+    #t of y
+    t = h5f['t'][n_lags:N:sub]
+    
+    bin_idx = np.zeros([y.size, n_bins])
+    
+    bins = np.linspace(np.min(y), np.max(y), n_bins+1)
+    count, _, binnumbers = stats.binned_statistic(y, np.zeros(y.size), statistic='count', bins=bins)
+    
+    unique_binnumbers = np.unique(binnumbers) 
+    
+    for i in unique_binnumbers:
+        idx = np.where(binnumbers == i)[0]
+        bin_idx[idx, i-1] = 1.0    
+    
+    return X, y, bin_idx, bins, t
+
+##############################################
+
 import numpy as np
 from scipy import stats

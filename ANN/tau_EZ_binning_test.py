@@ -13,13 +13,15 @@ plt.close('all')
 n_days = 4*365 
 
 #get the data
-name = 'tau_EZ_4years_7feat'
+name = 'ANN'
 n_softmax = 2
 n_bins = 10
-X_train, dE, bin_idx_dE, bins_dE, t = tf.get_tau_EZ_binned(n_days, 'dE', n_bins)
+n_lags = 5
+X_train, dE, bin_idx_dE, bins_dE, t = tf.get_tau_EZ_binned_lagged(n_days, 'dE', n_bins, n_lags)
 
 #assuming the same features
-_, dZ, bin_idx_dZ, bins_dZ, _ = tf.get_tau_EZ_binned(n_days, 'dZ', n_bins)
+_, dZ, bin_idx_dZ, bins_dZ, _ = tf.get_tau_EZ_binned_lagged(n_days, 'dZ', n_bins, n_lags)
+
 
 #make one data vector (per sample) of size n_softmax*n_bins
 bin_idx_train = np.concatenate([bin_idx_dE, bin_idx_dZ], axis = 1)
