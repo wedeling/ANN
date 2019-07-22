@@ -43,18 +43,18 @@ class SimpleBin:
             if len(self.covar[i]) > self.max_lag:
                 self.covar[i].pop(0)
 
-    #return lagged covariates, assumes constant lag
-    #Note: typecast to array if spatially varying lag is required
-    def get_covar(self, lags):
-        
-        c_i = np.zeros([self.N**2, self.N_c])
-
-        for i in range(self.N_c):
-            
-            if lags[i] <= self.max_lag:
-                c_i[:, i] = self.covar[i][-lags[i]]
-            else:
-                print 'Warning, max lag exceeded'
-                import sys; sys.exit()
-            
-        return c_i       
+#    #return lagged covariates, assumes constant lag
+#    #Note: typecast to array if spatially varying lag is required
+#    def get_covar(self, lags):
+#        
+#        c_i = np.zeros([self.N**2, self.N_c])
+#
+#        for i in range(self.N_c):
+#            
+#            if lags[i] <= self.max_lag:
+#                c_i[:, i] = self.covar[i][-lags[i]]
+#            else:
+#                print 'Warning, max lag exceeded'
+#                import sys; sys.exit()
+#            
+#        return c_i       
