@@ -13,15 +13,14 @@ plt.close('all')
 n_days = 4*365 
 
 #get the data
-name = 'tau_EZ_T5_2'
+name = 'tau_EZ_T5_n_lags2'
 n_softmax = 2
-n_bins = 30
-n_lags = 1
+n_bins = 20
+n_lags = 2
 X_train, dE, bin_idx_dE, bins_dE, t = tf.get_tau_EZ_binned_lagged(n_days, 'dE', n_bins, n_lags)
 
 #assuming the same features
 _, dZ, bin_idx_dZ, bins_dZ, _ = tf.get_tau_EZ_binned_lagged(n_days, 'dZ', n_bins, n_lags)
-
 
 #make one data vector (per sample) of size n_softmax*n_bins
 bin_idx_train = np.concatenate([bin_idx_dE, bin_idx_dZ], axis = 1)
@@ -32,7 +31,7 @@ N = t.size
 #train or load the ANN
 ######################
 
-train = False
+train = True
 
 if train == True:
 
@@ -41,7 +40,7 @@ if train == True:
                  standardize_y = False, batch_size=512, name=name, save=True, aux_vars={'dE':dE, 'dZ':dZ, 'bins_dE':bins_dE, 'bins_dZ':bins_dZ})
     ann.get_n_weights()
 
-    ann.train(100000, store_loss=True)
+    ann.train(50000, store_loss=True)
     
     if len(ann.loss_vals) > 0:
         fig_loss = plt.figure()

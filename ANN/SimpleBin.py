@@ -1,5 +1,6 @@
 import numpy as np
 from scipy import stats
+from itertools import chain
 
 class SimpleBin:
     
@@ -34,27 +35,15 @@ class SimpleBin:
     #Note: use list to dynamically append, array is very slow
     #Note 2: X_i must be of size [n_in, 1], where n_in is 
     #the number of input features at a SINGLE time instance
-    def append_covar(self, X_i):
+    def append_feat(self, X_i):
        
         for i in range(self.n_feat):
             self.feat[i].append(X_i[i])
             
             #if max number of lagged features is reached, remove first item
-            if len(self.covar[i]) > self.max_lag:
-                self.covar[i].pop(0)
+            if len(self.feat[i]) > self.max_lag:
+                self.feat[i].pop(0)
 
-#    #return lagged covariates, assumes constant lag
-#    #Note: typecast to array if spatially varying lag is required
-#    def get_covar(self, lags):
-#        
-#        c_i = np.zeros([self.N**2, self.N_c])
-#
-#        for i in range(self.N_c):
-#            
-#            if lags[i] <= self.max_lag:
-#                c_i[:, i] = self.covar[i][-lags[i]]
-#            else:
-#                print 'Warning, max lag exceeded'
-#                import sys; sys.exit()
-#            
-#        return c_i       
+    #return all time lagged features in self.feat as a 1d array
+    def get_all_feats(self):
+        return np.array(list(chain(*self.feat.values())))
