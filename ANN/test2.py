@@ -289,8 +289,8 @@ mu = 1.0/(day*decay_time_mu)
 
 #start, end time, end time of data (training period), time step
 dt = 0.01
-t = 0.0*day
-t_end = t + 10*day
+t = 250.0*day
+t_end = t + 8*365*day
 t_on_the_fly =  0. #t + 2*365*day
 n_steps = np.int(np.round((t_end-t)/dt))
 n_on_the_fly = np.floor((t_on_the_fly-t)/dt).astype('int')
@@ -331,14 +331,14 @@ tau_Z_max = 1.0
 
 #Manual specification of flags 
 state_store = False      #store the state at the end
-restart = False           #restart from prev state
-store = False            #store data
-plot = True              #plot results while running, requires drawnow package
+restart = True           #restart from prev state
+store = True             #store data
+plot = False             #plot results while running, requires drawnow package
 compute_ref = True       #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
-max_lag = 1
+max_lag = 50
 
-eddy_forcing_type = 'tau_ortho'  #which eddy forcing to use (tau_ortho, tau_ortho_ann, exact, unparam)
-input_file = 'T5_5'
+eddy_forcing_type = 'tau_ortho_ann'  #which eddy forcing to use (tau_ortho, tau_ortho_ann, exact, unparam)
+input_file = 'T5_n_lags50'
 
 store_ID = sim_ID + '_' + input_file 
 
@@ -374,7 +374,7 @@ if eddy_forcing_type == 'tau_ortho_ann':
     #create empty ANN object
     dE_dZ_ann = NN.ANN(X = np.zeros(10), y = np.zeros(1))
     #load trained ann
-    dE_dZ_ann.load_ANN(name='tau_EZ_T5_2')
+    dE_dZ_ann.load_ANN(name='tau_EZ_T5_n_lags50')
     
     #reset the batch size for both the ANN and all Layer objects
     dE_dZ_ann.batch_size = 1    
@@ -391,12 +391,16 @@ if eddy_forcing_type == 'tau_ortho_ann':
     X_mean = dE_dZ_ann.X_mean
     X_std = dE_dZ_ann.X_std
 
+    #data mean
+    mu_n = X_mean 
+    sigma2_n = X_std**2
+
     #number of featues
-    n_feat = dE_dZ_ann.n_in
+    n_feat = 7
     n_bins = np.int(dE_dZ_ann.n_out/dE_dZ_ann.n_softmax)
         
     #bin samplers
-    dE_sampler = binning.SimpleBin(r_dE, bins_dE, n_feat = dE_dZ_ann.n_in, max_lag = max_lag)
+    dE_sampler = binning.SimpleBin(r_dE, bins_dE, n_feat = n_feat, max_lag = max_lag)
     dZ_sampler = binning.SimpleBin(r_dZ, bins_dZ)
    
     #mapping from empty to nearest non empty bin
@@ -508,7 +512,7 @@ for n in range(n_steps):
         EF_hat_n_ortho = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime 
 
         #reference energy and enstrophy
-        e_np1_HF, z_np1_HF, _ = get_EZS(P_LF*w_hat_np1_HF)
+        #e_np1_HF, z_np1_HF, _ = get_EZS(P_LF*w_hat_np1_HF)
         e_n_HF, z_n_HF, _ = get_EZS(P_LF*w_hat_n_HF)
         
         #other reference values
@@ -537,21 +541,13 @@ for n in range(n_steps):
         EF_hat = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime
     elif eddy_forcing_type == 'tau_ortho_ann':
         
-        EF_hat = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime
+#        EF_hat = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime
         
         #features
         X_feat = np.array([z_n_LF, e_n_LF, u_n_LF, s_n_LF, v_n_LF, sprime_n_LF, zprime_n_LF])
-
-        if n == 0:
-            #data mean
-            mu_n = X_mean 
-            sigma2_n = X_std**2
-        else:
-            #compute running mean
-            mu_n, sigma2_n = recursive_moments(X_feat, mu_n, sigma2_n, n+1)
         
 #        X_feat = (X_feat - mu_n)/sigma2_n**0.5
-        X_feat = (X_feat - X_mean)/X_std
+#        X_feat = (X_feat - X_mean)/X_std
        
         dE_sampler.append_feat(X_feat)
         
@@ -583,23 +579,29 @@ for n in range(n_steps):
 #        _, idx_max_dE = dE_ann.get_softmax(X_feat.reshape([1, n_feat]))
 #        _, idx_max_dZ = dZ_ann.get_softmax(X_feat.reshape([1, n_feat]))
         
-        
         #get the most-likely bin
         if n >= max_lag - 1:
             X_lagged = dE_sampler.get_all_feats()
+
+            #compute running mean
+            mu_n, sigma2_n = recursive_moments(X_lagged, mu_n, sigma2_n, n+1)
+
+            X_lagged = (X_lagged - mu_n)/sigma2_n**0.5
+
             _, idx_max = dE_dZ_ann.get_softmax(X_lagged.reshape([1, max_lag*n_feat]))    
         #if max_lag > 1, we need several time steps in order to build up 
         #a vector of time-lagged features. Use data until n >= max_lag-1.
         #Note: assume data y[0] corresponds to t_0
         else:
             y_n = dE_dZ_ann.y[n].reshape([n_bins, dE_dZ_ann.n_softmax])
-            idx_max = np.where(y_n == 1)[0]            
+            idx_max = np.where(y_n == 1)[0]
+            print('Using data, building up time-lagged features')            
         
         r = [dE_sampler.draw(idx_max[0]), dZ_sampler.draw(idx_max[1])]
         
         r_tau_E, r_tau_Z = get_surrogate_tau_src_EZ(w_hat_n_LF, r, 1.0, 1.0)
         
-#        EF_hat = -r_tau_E*psi_hat_n_prime - r_tau_Z*w_hat_n_prime
+        EF_hat = -r_tau_E*psi_hat_n_prime - r_tau_Z*w_hat_n_prime
         
         R_DE_tilde.append(r[0])
         R_DZ_tilde.append(r[1])
@@ -624,8 +626,7 @@ for n in range(n_steps):
 
     t += dt
     j += 1
-    j2 += 1
-    
+    j2 += 1    
     
     #plot solution every plot_frame_rate. Requires drawnow() package
     if j == plot_frame_rate and plot == True:
