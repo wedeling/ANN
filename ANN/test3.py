@@ -11,16 +11,16 @@ def compute_VgradW_hat(w_hat_n, P):
     psi_hat_n[0,0] = 0.0
     
     #compute jacobian in physical space
-    u_n = np.fft.irfft2(-ky*psi_hat_n)
-    w_x_n = np.fft.irfft2(kx*w_hat_n)
+    u_n = np.fft.ifft2(-ky*psi_hat_n)
+    w_x_n = np.fft.ifft2(kx*w_hat_n)
 
-    v_n = np.fft.irfft2(kx*psi_hat_n)
-    w_y_n = np.fft.irfft2(ky*w_hat_n)
+    v_n = np.fft.ifft2(kx*psi_hat_n)
+    w_y_n = np.fft.ifft2(ky*w_hat_n)
     
     VgradW_n = u_n*w_x_n + v_n*w_y_n
     
     #return to spectral space
-    VgradW_hat_n = np.fft.rfft2(VgradW_n)
+    VgradW_hat_n = np.fft.fft2(VgradW_n)
     
     VgradW_hat_n *= P
     
@@ -41,10 +41,10 @@ def get_w_hat_np1(w_hat_n, w_hat_nm1, VgradW_hat_nm1, P, norm_factor, sgs_hat = 
 #compute spectral filter
 def get_P(cutoff):
     
-    P = np.ones([N, int(N/2+1)])
+    P = np.ones([N, N])
     
     for i in range(N):
-        for j in range(int(N/2+1)):
+        for j in range(N):
             
             if np.abs(kx[i, j]) > cutoff or np.abs(ky[i, j]) > cutoff:
                 P[i, j] = 0.0
@@ -136,8 +136,8 @@ def get_EZS(w_hat_n):
 
     psi_hat_n = w_hat_n/k_squared_no_zero
     psi_hat_n[0,0] = 0.0
-    psi_n = np.fft.irfft2(psi_hat_n)
-    w_n = np.fft.irfft2(w_hat_n)
+    psi_n = np.fft.ifft2(psi_hat_n)
+    w_n = np.fft.ifft2(w_hat_n)
     
     e_n = -0.5*psi_n*w_n
     z_n = 0.5*w_n**2
@@ -154,8 +154,8 @@ def compute_E(w_hat_n):
     
     psi_hat_n = w_hat_n/k_squared_no_zero
     psi_hat_n[0,0] = 0.0
-    psi_n = np.fft.irfft2(psi_hat_n)
-    w_n = np.fft.irfft2(w_hat_n)
+    psi_n = np.fft.ifft2(psi_hat_n)
+    w_n = np.fft.ifft2(w_hat_n)
     
     e_n = -0.5*psi_n*w_n
 
@@ -166,7 +166,7 @@ def compute_E(w_hat_n):
 #compute the enstrophy at t_n
 def compute_Z(w_hat_n):
     
-    w_n = np.fft.irfft2(w_hat_n)
+    w_n = np.fft.ifft2(w_hat_n)
     
     z_n = 0.5*w_n**2
 
@@ -183,8 +183,8 @@ def get_psi_hat_prime(w_hat_n):
     psi_hat_n = w_hat_n/k_squared_no_zero
     psi_hat_n[0, 0] = 0.
 
-    psi_n = np.fft.irfft2(psi_hat_n)
-    w_n = np.fft.irfft2(w_hat_n)
+    psi_n = np.fft.ifft2(psi_hat_n)
+    w_n = np.fft.ifft2(w_hat_n)
 
     nom = simps(simps(w_n*psi_n, axis), axis)
     denom = simps(simps(w_n*w_n, axis), axis)
@@ -196,8 +196,8 @@ def get_w_hat_prime(w_hat_n):
     psi_hat_n = w_hat_n/k_squared_no_zero
     psi_hat_n[0, 0] = 0.
 
-    psi_n = np.fft.irfft2(psi_hat_n)
-    w_n = np.fft.irfft2(w_hat_n)
+    psi_n = np.fft.ifft2(psi_hat_n)
+    w_n = np.fft.ifft2(w_hat_n)
 
     nom = simps(simps(w_n*psi_n, axis), axis)
     denom = simps(simps(psi_n*psi_n, axis), axis)
@@ -255,11 +255,11 @@ axis = np.linspace(0, 2.0*np.pi, N)
 #frequencies
 k = np.fft.fftfreq(N)*N
 
-kx = np.zeros([N, int(N/2+1)]) + 0.0j
-ky = np.zeros([N, int(N/2+1)]) + 0.0j
+kx = np.zeros([N, N]) + 0.0j
+ky = np.zeros([N, N]) + 0.0j
 
 for i in range(N):
-    for j in range(int(N/2+1)):
+    for j in range(N):
         kx[i, j] = 1j*k[j]
         ky[i, j] = 1j*k[i]
 
@@ -337,7 +337,7 @@ plot = True              #plot results while running, requires drawnow package
 compute_ref = True       #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
 max_lag = 1
 
-eddy_forcing_type = 'tau_ortho'  #which eddy forcing to use (tau_ortho, tau_ortho_ann, exact, unparam)
+eddy_forcing_type = 'exact'  #which eddy forcing to use (tau_ortho, tau_ortho_ann, exact, unparam)
 input_file = 'T5_5'
 
 store_ID = sim_ID + '_' + input_file 
@@ -431,14 +431,14 @@ if store == True:
         
         #a field
         if QoI[q][0].isupper():
-            samples[QoI[q]] = np.zeros([S, N, int(N/2+1)]) + 0.0j
+            samples[QoI[q]] = np.zeros([S, N, N]) + 0.0j
         #a scalar
         else:
             samples[QoI[q]] = np.zeros(S)
 
 #forcing term
 F = 2**1.5*np.cos(5*x)*np.cos(5*y);
-F_hat = np.fft.rfft2(F);
+F_hat = np.fft.fft2(F);
 
 if restart == True:
     
@@ -460,10 +460,10 @@ else:
         0.3*np.cos(5.0*x)*np.cos(5.0*y) + 0.02*np.sin(x) + 0.02*np.cos(y)
 
     #initial Fourier coefficients at time n and n-1
-    w_hat_n_HF = P*np.fft.rfft2(w)
+    w_hat_n_HF = P*np.fft.fft2(w)
     w_hat_nm1_HF = np.copy(w_hat_n_HF)
     
-    w_hat_n_LF = P_LF*np.fft.rfft2(w)
+    w_hat_n_LF = P_LF*np.fft.fft2(w)
     w_hat_nm1_LF = np.copy(w_hat_n_LF)
     
     #initial Fourier coefficients of the jacobian at time n and n-1
@@ -512,18 +512,18 @@ for n in range(n_steps):
         e_n_HF, z_n_HF, _ = get_EZS(P_LF*w_hat_n_HF)
         
         #other reference values
-        w_n_HF = np.fft.irfft2(P_LF*w_hat_n_HF)
+        w_n_HF = np.fft.ifft2(P_LF*w_hat_n_HF)
         v_n_HF = 0.5*simps(simps(w_n_HF*F, axis), axis)/(2.0*np.pi)**2
 
     #######################################
     # covariates (conditioning variables) #
     #######################################
     e_n_LF, z_n_LF, s_n_LF = get_EZS(w_hat_n_LF)
-    psi_n_LF = np.fft.irfft2(get_psi_hat(w_hat_n_LF))
+    psi_n_LF = np.fft.ifft2(get_psi_hat(w_hat_n_LF))
     u_n_LF = 0.5*simps(simps(psi_n_LF*F, axis), axis)/(2.0*np.pi)**2
-    w_n_LF = np.fft.irfft2(w_hat_n_LF)
+    w_n_LF = np.fft.ifft2(w_hat_n_LF)
     v_n_LF = 0.5*simps(simps(w_n_LF*F, axis), axis)/(2.0*np.pi)**2
-    nabla2_w_n_LF = np.fft.irfft2(k_squared*w_hat_n_LF)
+    nabla2_w_n_LF = np.fft.ifft2(k_squared*w_hat_n_LF)
     o_n_LF = 0.5*simps(simps(nabla2_w_n_LF*w_n_LF, axis), axis)/(2.0*np.pi)**2
 
     #compute S' and Z'
@@ -610,7 +610,7 @@ for n in range(n_steps):
         
     #unparameterized solution
     elif eddy_forcing_type == 'unparam':
-        EF_hat = np.zeros([N, int(N/2+1)])
+        EF_hat = np.zeros([N, N])
     #exact, full-field eddy forcing
     elif eddy_forcing_type == 'exact':
         EF_hat = EF_hat_nm1_exact
@@ -626,13 +626,37 @@ for n in range(n_steps):
     j += 1
     j2 += 1
     
+    #
+    # check ode forms
+    #
+    
+    psi_hat_np1_LF = get_psi_hat(w_hat_np1_LF)
+    psi_hat_n_LF = get_psi_hat(w_hat_n_LF)
+    psi_hat_nm1_LF = get_psi_hat(w_hat_nm1_LF)
+
+    t_e_np1_LF = -0.5*(np.sum(psi_hat_np1_LF*np.conj(w_hat_np1_LF))/N**4).real
+    t_e_n_LF = -0.5*(np.sum(psi_hat_n_LF*np.conj(w_hat_n_LF))/N**4).real
+    t_e_nm1_LF = -0.5*(np.sum(psi_hat_nm1_LF*np.conj(w_hat_nm1_LF))/N**4).real
+    
+    t_z_np1_LF = 0.5*(np.sum(w_hat_np1_LF*np.conj(w_hat_np1_LF))/N**4).real
+    t_v_np1_LF = 0.5*(np.sum(w_hat_np1_LF*np.conj(F_hat))/N**4).real
+    t_r_nm1 = (np.sum(w_hat_np1_LF*np.conj(EF_hat))/N**4).real
+        
+    lhs = (3.0*t_e_np1_LF - 4.0*t_e_n_LF + t_e_nm1_LF)/(2.0*dt)
+    rhs = -2.0*nu*t_z_np1_LF - 2.0*mu*t_v_np1_LF - 2.0*mu*t_e_np1_LF + t_r_nm1    
+    
+    rhs2 = -np.sum(psi_hat_np1_LF*(nu*k_squared*w_hat_np1_LF + mu*(F_hat - w_hat_np1_LF) - EF_hat))/N**4
+    
+    print(lhs)
+    print(rhs2.real)
+    print('-----------------')
     
     #plot solution every plot_frame_rate. Requires drawnow() package
     if j == plot_frame_rate and plot == True:
         j = 0
 
-        w_np1_LF = np.fft.irfft2(w_hat_np1_LF)
-        EF = np.fft.irfft2(EF_hat)
+        w_np1_LF = np.fft.ifft2(w_hat_np1_LF)
+        EF = np.fft.ifft2(EF_hat)
         
         e_n_HF, z_n_HF, s_n_HF = get_EZS(P_LF*w_hat_n_HF)
         e_n_LF, z_n_LF, s_n_LF = get_EZS(w_hat_n_LF)
