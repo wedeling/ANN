@@ -21,8 +21,8 @@ HOME = os.path.abspath(os.path.dirname(__file__))
 ###########################
 Omega = 7.292*10**-5
 day = 24*60**2*Omega
-sim_ID = 'tau_EZ_T5_2'
-t_end = (250.0 + 8*365.)*day 
+sim_ID = 'tau_EZ_T5_n_lags1'
+t_end = (250.0 + 5000.)*day 
 burn = 0#np.int(365*day)
 
 fig = plt.figure(figsize=[8, 4])

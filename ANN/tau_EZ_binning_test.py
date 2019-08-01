@@ -13,10 +13,10 @@ plt.close('all')
 n_days = 4*365 
 
 #get the data
-name = 'tau_EZ_T5_n_lags2'
+name = 'tau_EZ_T5_n_lags3'
 n_softmax = 2
 n_bins = 20
-n_lags = 50
+n_lags = 100
 X_train, dE, bin_idx_dE, bins_dE, t = tf.get_tau_EZ_binned_lagged(n_days, 'dE', n_bins, n_lags)
 
 #assuming the same features

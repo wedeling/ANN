@@ -290,7 +290,7 @@ mu = 1.0/(day*decay_time_mu)
 #start, end time, end time of data (training period), time step
 dt = 0.01
 t = 250.0*day
-t_end = t + 8*365*day
+t_end = t + 5000*day
 t_on_the_fly =  0. #t + 2*365*day
 n_steps = np.int(np.round((t_end-t)/dt))
 n_on_the_fly = np.floor((t_on_the_fly-t)/dt).astype('int')
@@ -335,10 +335,10 @@ restart = True           #restart from prev state
 store = True             #store data
 plot = False             #plot results while running, requires drawnow package
 compute_ref = True       #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
-max_lag = 50
+max_lag = 2
 
 eddy_forcing_type = 'tau_ortho_ann'  #which eddy forcing to use (tau_ortho, tau_ortho_ann, exact, unparam)
-input_file = 'T5_n_lags50'
+input_file = 'T5_n_lags2'
 
 store_ID = sim_ID + '_' + input_file 
 
@@ -374,7 +374,7 @@ if eddy_forcing_type == 'tau_ortho_ann':
     #create empty ANN object
     dE_dZ_ann = NN.ANN(X = np.zeros(10), y = np.zeros(1))
     #load trained ann
-    dE_dZ_ann.load_ANN(name='tau_EZ_T5_n_lags50')
+    dE_dZ_ann.load_ANN(name='tau_EZ_T5_n_lags2')
     
     #reset the batch size for both the ANN and all Layer objects
     dE_dZ_ann.batch_size = 1    
