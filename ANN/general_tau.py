@@ -93,6 +93,33 @@ def get_psi_hat(w_hat_n):
 # DATA-DRIVEN TAU SUBROUTINES #
 ###############################
 
+def compute_cij(T_hat, V_hat):
+
+    n_scalar = T_hat.shape[0]
+    c_ij = np.zeros([n_scalar, n_scalar-1])
+
+    for i in range(n_scalar):
+        A = np.zeros([n_scalar-1, n_scalar-1])
+        b = np.zeros(n_scalar-1)
+
+        k = np.delete(np.arange(n_scalar), i)
+
+        for j1 in range(n_scalar-1):
+            for j2 in range(n_scalar-1):
+                integral = compute_int(V_hat[k[j1]], T_hat[i, j2+1])
+                A[j1, j2] = integral
+
+        for j1 in range(n_scalar-1):
+            integral = compute_int(V_hat[k[j1]], T_hat[i, 0])
+            b[j1] = integral
+
+        if n_scalar == 2:
+            c_ij[i,:] = b/A
+        else:
+            c_ij[i,:] = np.linalg.solve(A, b)
+            
+    return c_ij
+
 def get_data_driven_tau_src_EZ(w_hat_n_LF, w_hat_n_HF, P, tau_max_E, tau_max_Z):
     
     E_LF, Z_LF, S_LF = get_EZS(w_hat_n_LF)
@@ -451,24 +478,21 @@ for n in range(n_steps):
     T_hat_21 = psi_hat_n_LF
     T_hat_22 = w_hat_n_LF
     
-    A_1 = np.zeros([1])
-    A_1[0] = compute_int(V_hat_2, T_hat_12)
+    ##############################
     
-    f_1 = np.zeros([1])
-    f_1[0] = compute_int(V_hat_2, T_hat_11)
+    T_hat = np.zeros([2,2,N,int(N/2+1)]) + 0.0j
+    T_hat[0,0] = T_hat_11
+    T_hat[0,1] = T_hat_12
+    T_hat[1,0] = T_hat_21
+    T_hat[1,1] = T_hat_22
     
-    A_2 = np.zeros([1])
-    A_2[0] = compute_int(V_hat_1, T_hat_22)
+    V_hat = np.zeros([2,N,int(N/2+1)]) + 0.0j
+    V_hat[0] = V_hat_1
+    V_hat[1] = V_hat_2
     
-    f_2 = np.zeros([1])
-    f_2[0] = compute_int(V_hat_1, T_hat_21)
-
-    #c_12 = np.linalg.solve(A_1, f_1)
-    #c_22 = np.linalg.solve(A_2, f_2)
-
-    c_12 = f_1/A_1
-    c_22 = f_2/A_2
-
+    c_ij = compute_cij(T_hat, V_hat)
+    c_12 = c_ij[0]; c_22 = c_ij[1]
+    
     P_hat_1 = T_hat_11 - c_12*T_hat_12
     P_hat_2 = T_hat_21 - c_22*T_hat_22
 
