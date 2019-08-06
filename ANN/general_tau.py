@@ -70,14 +70,18 @@ def store_samples_hdf5():
         
     h5f.close()    
 
-def draw_2w():
-    plt.subplot(121, title=r'$E$', xlabel=r'$t\;[day]$')
+def draw():
+    plt.subplot(131, title=r'$E$', xlabel=r'$t\;[day]$')
     plt.plot(np.array(T)/day, E_HF, 'o')
     plt.plot(np.array(T)/day, E_LF)
     plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-    plt.subplot(122, title=r'$Z$', xlabel=r'$t\;[day]$')
+    plt.subplot(132, title=r'$Z$', xlabel=r'$t\;[day]$')
     plt.plot(np.array(T)/day, Z_HF, 'o')
     plt.plot(np.array(T)/day, Z_LF)
+    plt.subplot(133, title=r'$W3$', xlabel=r'$t\;[day]$')
+    plt.plot(np.array(T)/day, W3_HF, 'o')
+    plt.plot(np.array(T)/day, W3_LF)
+    
     plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
     plt.tight_layout()
 
@@ -162,13 +166,13 @@ def get_EZS(w_hat_n):
     
     e_n = -0.5*psi_n*w_n
     z_n = 0.5*w_n**2
-    s_n = 0.5*psi_n**2 
+    w3_n = w_n**3/3.0 
 
     E = simps(simps(e_n, axis), axis)/(2*np.pi)**2
     Z = simps(simps(z_n, axis), axis)/(2*np.pi)**2
-    S = simps(simps(s_n, axis), axis)/(2*np.pi)**2
+    W3 = simps(simps(w3_n, axis), axis)/(2*np.pi)**2
 
-    return E, Z, S
+    return E, Z, W3
 
 #compute the energy at t_n
 def compute_E(w_hat_n):
@@ -314,7 +318,7 @@ mu = 1.0/(day*decay_time_mu)
 #start, end time, end time of data (training period), time step
 dt = 0.01
 t = 250.0*day
-t_end = t + 10*day
+t_end = t + 250*day
 n_steps = np.int(np.round((t_end-t)/dt))
 
 #############
@@ -322,7 +326,7 @@ n_steps = np.int(np.round((t_end-t)/dt))
 #############
 
 #simulation name
-sim_ID = 'tau_EZ'
+sim_ID = 'gen_tau'
 #framerate of storing data, plotting results, computing correlations (1 = every integration time step)
 store_frame_rate = 1
 plot_frame_rate = np.floor(1.0*day/dt).astype('int')
@@ -331,10 +335,10 @@ corr_frame_rate = np.floor(0.25*day/dt).astype('int')
 S = np.floor(n_steps/store_frame_rate).astype('int')
 
 #Manual specification of flags 
-state_store = False      #store the state at the end
+state_store = True       #store the state at the end
 restart = True           #restart from prev state
 store = False            #store data
-plot = True             #plot results while running, requires drawnow package
+plot = True              #plot results while running, requires drawnow package
 compute_ref = True       #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
 
 eddy_forcing_type = 'tau_ortho'  
@@ -418,9 +422,9 @@ norm_factor_LF = 1.0/(3.0/(2.0*dt) - nu_LF*k_squared + mu)  #for Low-Fidelity (L
 #some counters
 j = 0; j2 = 0; idx = 0;
 
-T = []; E_LF = []; Z_LF = []; E_HF = []; Z_HF = []
+T = []; E_LF = []; Z_LF = []; E_HF = []; Z_HF = []; W3_HF = []; W3_LF = []
 
-fig = plt.figure(figsize=[10, 5])
+fig = plt.figure(figsize=[12, 4])
 
 #time loop
 for n in range(n_steps):
@@ -445,16 +449,12 @@ for n in range(n_steps):
 
         #reference energy and enstrophy
         #e_np1_HF, z_np1_HF, _ = get_EZS(P_LF*w_hat_np1_HF)
-        e_n_HF, z_n_HF, _ = get_EZS(P_LF*w_hat_n_HF)
+        e_n_HF, z_n_HF, w3_n_HF = get_EZS(P_LF*w_hat_n_HF)
         
-        #other reference values
-        w_n_HF = np.fft.irfft2(P_LF*w_hat_n_HF)
-        v_n_HF = 0.5*simps(simps(w_n_HF*F, axis), axis)/(2.0*np.pi)**2
-
     #######################################
     # covariates (conditioning variables) #
     #######################################
-    e_n_LF, z_n_LF, s_n_LF = get_EZS(w_hat_n_LF)
+    e_n_LF, z_n_LF, w3_n_LF = get_EZS(w_hat_n_LF)
 #    psi_n_LF = np.fft.irfft2(get_psi_hat(w_hat_n_LF))
 #    u_n_LF = 0.5*simps(simps(psi_n_LF*F, axis), axis)/(2.0*np.pi)**2
 #    w_n_LF = np.fft.irfft2(w_hat_n_LF)
@@ -462,53 +462,79 @@ for n in range(n_steps):
 #    nabla2_w_n_LF = np.fft.irfft2(k_squared*w_hat_n_LF)
 #    o_n_LF = 0.5*simps(simps(nabla2_w_n_LF*w_n_LF, axis), axis)/(2.0*np.pi)**2
 
-    #compute S' and Z'
-    sprime_n_LF = e_n_LF**2/z_n_LF - s_n_LF
-    zprime_n_LF = z_n_LF - e_n_LF**2/s_n_LF
-    
     ###############################
     # generalized scalar tracking #
     ###############################
     
-    psi_hat_n_LF = get_psi_hat(w_hat_n_LF) 
+    psi_hat_n_LF = get_psi_hat(w_hat_n_LF)
+    w_n_LF = np.fft.irfft2(w_hat_n_LF)
+    w_hat_n_LF_squared = P_LF*np.fft.rfft2(w_n_LF**2)
+    
     V_hat_1 = -psi_hat_n_LF
     V_hat_2 = w_hat_n_LF
+    V_hat_3 = w_hat_n_LF_squared
+    
     T_hat_11 = psi_hat_n_LF
     T_hat_12 = w_hat_n_LF
-    T_hat_21 = psi_hat_n_LF
-    T_hat_22 = w_hat_n_LF
+    T_hat_13 = w_hat_n_LF_squared
+    
+    T_hat_21 = w_hat_n_LF
+    T_hat_22 = psi_hat_n_LF
+    T_hat_23 = w_hat_n_LF_squared
+    
+    T_hat_31 = w_hat_n_LF_squared
+    T_hat_32 = psi_hat_n_LF
+    T_hat_33 = w_hat_n_LF    
     
     ##############################
     
-    T_hat = np.zeros([2,2,N,int(N/2+1)]) + 0.0j
+    T_hat = np.zeros([3,3,N,int(N/2+1)]) + 0.0j
     T_hat[0,0] = T_hat_11
     T_hat[0,1] = T_hat_12
+    T_hat[0,2] = T_hat_13
+
     T_hat[1,0] = T_hat_21
     T_hat[1,1] = T_hat_22
+    T_hat[1,2] = T_hat_23
+
+    T_hat[2,0] = T_hat_31
+    T_hat[2,1] = T_hat_32
+    T_hat[2,2] = T_hat_33
     
-    V_hat = np.zeros([2,N,int(N/2+1)]) + 0.0j
+    V_hat = np.zeros([3,N,int(N/2+1)]) + 0.0j
     V_hat[0] = V_hat_1
     V_hat[1] = V_hat_2
+    V_hat[2] = V_hat_3
     
     c_ij = compute_cij(T_hat, V_hat)
-    c_12 = c_ij[0]; c_22 = c_ij[1]
+    c_12 = c_ij[0,0]; c_13 = c_ij[0,1]
+    c_22 = c_ij[1,0]; c_23 = c_ij[1,1]
+    c_32 = c_ij[2,0]; c_33 = c_ij[2,1]
     
-    P_hat_1 = T_hat_11 - c_12*T_hat_12
-    P_hat_2 = T_hat_21 - c_22*T_hat_22
+    P_hat_1 = T_hat_11 - c_12*T_hat_12 - c_13*T_hat_13
+    P_hat_2 = T_hat_21 - c_22*T_hat_22 - c_23*T_hat_23
+    P_hat_3 = T_hat_31 - c_32*T_hat_32 - c_33*T_hat_33
 
-    src_E = compute_int(V_hat_1, P_hat_1)
-    src_Z = compute_int(V_hat_2, P_hat_2)
+#    src_E = compute_int(V_hat_1, P_hat_1)
+#    src_Z = compute_int(V_hat_2, P_hat_2)
+#    src_W3 = compute_int(V_hat_3, P_hat_3)
 
     dE = e_n_HF - e_n_LF
     dZ = z_n_HF - z_n_LF
-
-    tau_1 = np.tanh(dE/e_n_LF)*np.sign(src_E)
-    tau_2 = np.tanh(dZ/z_n_LF)*np.sign(src_Z)
+    dW3 = w3_n_HF - w3_n_LF
     
+#    tau_1 = np.tanh(dE/e_n_LF)*np.sign(src_E)
+#    tau_2 = np.tanh(dZ/z_n_LF)*np.sign(src_Z)
+#    tau_3 = 10**-4*np.tanh(dW3/w3_n_LF)*np.sign(src_W3)
+    
+    _tau_1 = dE/compute_int(V_hat_1, P_hat_1)
+    _tau_2 = dZ/compute_int(V_hat_2, P_hat_2)
+    _tau_3 = dW3/compute_int(V_hat_3, P_hat_3)
+   
     #exact orthogonal pattern surrogate
     if eddy_forcing_type == 'tau_ortho':
         #EF_hat = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime
-        EF_hat = -tau_1*P_hat_1 - tau_2*P_hat_2
+        EF_hat = -_tau_1*P_hat_1 - _tau_2*P_hat_2 - _tau_3*P_hat_3
 
     #unparameterized solution
     elif eddy_forcing_type == 'unparam':
@@ -532,17 +558,18 @@ for n in range(n_steps):
     if j == plot_frame_rate and plot == True:
         j = 0
 
-        e_n_HF, z_n_HF, s_n_HF = get_EZS(P_LF*w_hat_n_HF)
-        e_n_LF, z_n_LF, s_n_LF = get_EZS(w_hat_n_LF)
+        e_n_HF, z_n_HF, w3_n_HF = get_EZS(P_LF*w_hat_n_HF)
+        e_n_LF, z_n_LF, w3_n_LF = get_EZS(w_hat_n_LF)
         
         T.append(t)
         E_LF.append(e_n_LF); Z_LF.append(z_n_LF)
         E_HF.append(e_n_HF); Z_HF.append(z_n_HF)
+        W3_HF.append(w3_n_HF); W3_LF.append(w3_n_LF)
         
-        print('e_n_HF: %.4f' % e_n_HF, 'z_n_HF: %.4f' % z_n_HF, 's_n_HF: %.4f' % s_n_HF)
-        print('e_n_LF: %.4f' % e_n_LF, 'z_n_LF: %.4f' % z_n_LF, 's_n_LF: %.4f' % s_n_LF)
+        print('e_n_HF: %.4f' % e_n_HF, 'z_n_HF: %.4f' % z_n_HF, 'w3_n_HF: %.4f' % w3_n_HF)
+        print('e_n_LF: %.4f' % e_n_LF, 'z_n_LF: %.4f' % z_n_LF, 'w3_n_LF: %.4f' % w3_n_LF)
         
-        drawnow(draw_2w)
+        drawnow(draw)
         
     #store samples to dict
     if j2 == store_frame_rate and store == True:
