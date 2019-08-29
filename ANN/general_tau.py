@@ -51,6 +51,19 @@ def get_P(cutoff):
                 
     return P
 
+#compute spectral filter
+def get_P_full(cutoff):
+
+    P = np.ones([N, N])
+
+    for i in range(N):
+        for j in range(N):
+
+            if np.abs(kx_full[i, j]) > cutoff or np.abs(ky_full[i, j]) > cutoff:
+                P[i, j] = 0.0
+
+    return P
+
 #store samples in hierarchical data format, when sample size become very large
 def store_samples_hdf5():
   
@@ -71,19 +84,33 @@ def store_samples_hdf5():
     h5f.close()    
 
 def draw():
-    plt.subplot(131, title=r'$E$', xlabel=r'$t\;[day]$')
-    plt.plot(np.array(T)/day, E_HF, 'o')
-    plt.plot(np.array(T)/day, E_LF)
-    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-    plt.subplot(132, title=r'$Z$', xlabel=r'$t\;[day]$')
-    plt.plot(np.array(T)/day, Z_HF, 'o')
-    plt.plot(np.array(T)/day, Z_LF)
-    plt.subplot(133, title=r'$W3$', xlabel=r'$t\;[day]$')
-    plt.plot(np.array(T)/day, W3_HF, 'o')
-    plt.plot(np.array(T)/day, W3_LF)
-    
-    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-    plt.tight_layout()
+    plt.subplot(121)
+    plt.contourf(x, y, w_n_LF, 100)
+    plt.subplot(122)
+    plt.contourf(x, y, w_n_LF_full, 100)
+
+#    plt.subplot(131, title=r'$E$', xlabel=r'$t\;[day]$')
+#    plt.plot(np.array(T)/day, E_HF, 'o')
+#    plt.plot(np.array(T)/day, E_LF)
+#    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+#    plt.subplot(132, title=r'$Z$', xlabel=r'$t\;[day]$')
+#    plt.plot(np.array(T)/day, Z_HF, 'o')
+#    plt.plot(np.array(T)/day, Z_LF)
+#    plt.subplot(133, title=r'$W3$', xlabel=r'$t\;[day]$')
+#    plt.plot(np.array(T)/day, W3_HF, 'o')
+#    plt.plot(np.array(T)/day, W3_LF)
+#    plt.subplot(133, title=r'$\tau$', xlabel=r'$t\;[day]$')
+#    plt.plot(np.array(T)/day, TAU1)
+#    plt.plot(np.array(T)/day, TAU2)
+#    plt.plot(np.array(T)/day, TAU3)
+#    plt.subplot(133, title=r'$\bar{r}$', xlabel=r'$t\;[day]$')
+#    plt.contourf(x, y, EF, 100)
+#    plt.colorbar()
+#    plt.subplot(133, xlabel=r'$t\;[day]$')
+#    plt.plot(np.array(T)/day, TEST)
+#    
+#    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+#    plt.tight_layout()
 
 #return the fourier coefs of the stream function
 def get_psi_hat(w_hat_n):
@@ -199,6 +226,40 @@ def compute_Z(w_hat_n):
     
     return Z
 
+#compute all QoI at t_n
+def compute_qoi(w_hat_n, verbose=True):
+
+    #compute stats using Fourier coefficients - is faster
+    #convert rfft2 coefficients to fft2 coefficients
+    w_hat_full = np.zeros([N, N]) + 0.0j
+    w_hat_full[0:N, 0:int(N/2+1)] = w_hat_n
+    w_hat_full[map_I, map_J] = np.conjugate(w_hat_n[I, J])
+    w_hat_full *= P_full
+    
+    #compute Fourier coefficients of stream function
+    psi_hat_full = w_hat_full/k_squared_no_zero_full
+    psi_hat_full[0,0] = 0.0
+
+    #compute energy and enstrophy (density)
+    Z = 0.5*np.sum(w_hat_full*np.conjugate(w_hat_full))/N**4
+    E = -0.5*np.sum(psi_hat_full*np.conjugate(w_hat_full))/N**4
+    U = 0.5*np.sum(psi_hat_full*np.conjugate(F_hat_full))/N**4
+    S = 0.5*np.sum(psi_hat_full*np.conjugate(psi_hat_full))/N**4
+    O = 0.5*np.sum(k_squared_full*w_hat_full*np.conjugate(w_hat_full))/N**4
+    V = 0.5*np.sum(w_hat_full*np.conjugate(F_hat_full))/N**4
+
+    Sprime = E**2/Z - S
+    Zprime = Z - E**2/S
+
+    if verbose:
+        #print 'Energy = ', E, ', enstrophy = ', Z
+        print('Z = ', Z.real, ', E = ', E.real)
+        print('U = ', U.real, ', S = ', S.real)
+        print('V = ', V.real, ', O = ', O.real)
+        print('Sprime = ', Sprime.real, ', Zprime = ', Zprime.real)
+
+    return Z.real, E.real, U.real, S.real, V.real, O.real, Sprime.real, Zprime.real
+
 def compute_int(X1_hat, X2_hat):
     
     X1 = np.fft.irfft2(X1_hat)
@@ -271,7 +332,7 @@ plt.close('all')
 plt.rcParams['image.cmap'] = 'seismic'
 
 #number of gridpoints in 1D
-I = 7
+I = 6
 N = 2**I
 
 #2D grid
@@ -295,14 +356,38 @@ k_squared = kx**2 + ky**2
 k_squared_no_zero = np.copy(k_squared)
 k_squared_no_zero[0,0] = 1.0
 
+kx_full = np.zeros([N, N]) + 0.0j
+ky_full = np.zeros([N, N]) + 0.0j
+
+for i in range(N):
+    for j in range(N):
+        kx_full[i, j] = 1j*k[j]
+        ky_full[i, j] = 1j*k[i]
+
+k_squared_full = kx_full**2 + ky_full**2
+k_squared_no_zero_full = np.copy(k_squared_full)
+k_squared_no_zero_full[0,0] = 1.0
+
 #cutoff in pseudospectral method
 Ncutoff = N/3
-Ncutoff_LF = 2**(I-1)/3 
+Ncutoff_LF = 2**(I-0)/3 
 
 #spectral filter
 P = get_P(Ncutoff)
 P_LF = get_P(Ncutoff_LF)
 P_U = P - P_LF
+
+#spectral filter for the full FFT2 (used in compute_E_Z)
+P_full = get_P_full(Ncutoff_LF)
+
+#map from the rfft2 coefficient indices to fft2 coefficient indices
+#Use: see compute_E_Z subroutine
+shift = np.zeros(N).astype('int')
+for i in range(1,N):
+    shift[i] = np.int(N-i)
+I = range(N);J = range(np.int(N/2+1))
+map_I, map_J = np.meshgrid(shift[I], shift[J])
+I, J = np.meshgrid(I, J)
 
 #time scale
 Omega = 7.292*10**-5
@@ -312,13 +397,14 @@ day = 24*60**2*Omega
 decay_time_nu = 5.0
 decay_time_mu = 90.0
 nu = 1.0/(day*Ncutoff**2*decay_time_nu)
-nu_LF = 1.0/(day*Ncutoff**2*decay_time_nu)
+nu_LF = 1.0/(day*Ncutoff_LF**2*decay_time_nu)
+
 mu = 1.0/(day*decay_time_mu)
 
 #start, end time, end time of data (training period), time step
 dt = 0.01
 t = 250.0*day
-t_end = t + 250*day
+t_end = t + 10*365*day
 n_steps = np.int(np.round((t_end-t)/dt))
 
 #############
@@ -326,22 +412,21 @@ n_steps = np.int(np.round((t_end-t)/dt))
 #############
 
 #simulation name
-sim_ID = 'gen_tau'
+sim_ID = 'unparam'
 #framerate of storing data, plotting results, computing correlations (1 = every integration time step)
 store_frame_rate = 1
 plot_frame_rate = np.floor(1.0*day/dt).astype('int')
-corr_frame_rate = np.floor(0.25*day/dt).astype('int')
 #length of data array
 S = np.floor(n_steps/store_frame_rate).astype('int')
 
 #Manual specification of flags 
 state_store = True       #store the state at the end
-restart = True           #restart from prev state
-store = False            #store data
-plot = True              #plot results while running, requires drawnow package
-compute_ref = True       #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
+restart = True          #restart from prev state
+store = True            #store data
+plot = False             #plot results while running, requires drawnow package
+compute_ref = False      #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
 
-eddy_forcing_type = 'tau_ortho'  
+eddy_forcing_type = 'unparam'  
 
 store_ID = sim_ID 
     
@@ -352,13 +437,15 @@ store_ID = sim_ID
 #QoI to store, First letter in caps implies an NxN field, otherwise a scalar 
 
 #TRAINING DATA SET
-QoI = ['z_n_HF', 'e_n_HF', \
-       'z_n_LF', 'e_n_LF', 'u_n_LF', 's_n_LF', 'v_n_LF', 'o_n_LF', \
-       'sprime_n_LF', 'zprime_n_LF', \
-       'tau_E', 'tau_Z', 't', 'r[0]', 'r[1]', 'dE_train', 'dZ_train']
+#QoI = ['z_n_HF', 'e_n_HF', 'w3_n_HF', 
+#       'z_n_LF', 'e_n_LF', 'w3_n_LF', 
+#       'src1', 'src2', 
+#       'c_12', 'c_22', 
+#       'tau_1', 'tau_2', 
+#       'dE', 'dZ']
 
 #PREDICTION DATA SET
-#QoI = ['z_n_LF', 'e_n_LF', 't']
+QoI = ['z_n_LF', 'e_n_LF', 'w3_n_LF', 't']
 
 Q = len(QoI)
 
@@ -381,6 +468,7 @@ if store == True:
 #forcing term
 F = 2**1.5*np.cos(5*x)*np.cos(5*y);
 F_hat = np.fft.rfft2(F);
+F_hat_full = np.fft.fft2(F)
 
 if restart == True:
     
@@ -423,8 +511,10 @@ norm_factor_LF = 1.0/(3.0/(2.0*dt) - nu_LF*k_squared + mu)  #for Low-Fidelity (L
 j = 0; j2 = 0; idx = 0;
 
 T = []; E_LF = []; Z_LF = []; E_HF = []; Z_HF = []; W3_HF = []; W3_LF = []
+TAU1 = []; TAU2 = []; TAU3 = []
+TEST = []
 
-fig = plt.figure(figsize=[12, 4])
+fig = plt.figure(figsize=[8, 4])
 
 #time loop
 for n in range(n_steps):
@@ -466,75 +556,79 @@ for n in range(n_steps):
     # generalized scalar tracking #
     ###############################
     
-    psi_hat_n_LF = get_psi_hat(w_hat_n_LF)
-    w_n_LF = np.fft.irfft2(w_hat_n_LF)
-    w_hat_n_LF_squared = P_LF*np.fft.rfft2(w_n_LF**2)
-    
-    V_hat_1 = -psi_hat_n_LF
-    V_hat_2 = w_hat_n_LF
-    V_hat_3 = w_hat_n_LF_squared
-    
-    T_hat_11 = psi_hat_n_LF
-    T_hat_12 = w_hat_n_LF
-    T_hat_13 = w_hat_n_LF_squared
-    
-    T_hat_21 = w_hat_n_LF
-    T_hat_22 = psi_hat_n_LF
-    T_hat_23 = w_hat_n_LF_squared
-    
-    T_hat_31 = w_hat_n_LF_squared
-    T_hat_32 = psi_hat_n_LF
-    T_hat_33 = w_hat_n_LF    
-    
-    ##############################
-    
-    T_hat = np.zeros([3,3,N,int(N/2+1)]) + 0.0j
-    T_hat[0,0] = T_hat_11
-    T_hat[0,1] = T_hat_12
-    T_hat[0,2] = T_hat_13
-
-    T_hat[1,0] = T_hat_21
-    T_hat[1,1] = T_hat_22
-    T_hat[1,2] = T_hat_23
-
-    T_hat[2,0] = T_hat_31
-    T_hat[2,1] = T_hat_32
-    T_hat[2,2] = T_hat_33
-    
-    V_hat = np.zeros([3,N,int(N/2+1)]) + 0.0j
-    V_hat[0] = V_hat_1
-    V_hat[1] = V_hat_2
-    V_hat[2] = V_hat_3
-    
-    c_ij = compute_cij(T_hat, V_hat)
-    c_12 = c_ij[0,0]; c_13 = c_ij[0,1]
-    c_22 = c_ij[1,0]; c_23 = c_ij[1,1]
-    c_32 = c_ij[2,0]; c_33 = c_ij[2,1]
-    
-    P_hat_1 = T_hat_11 - c_12*T_hat_12 - c_13*T_hat_13
-    P_hat_2 = T_hat_21 - c_22*T_hat_22 - c_23*T_hat_23
-    P_hat_3 = T_hat_31 - c_32*T_hat_32 - c_33*T_hat_33
-
-#    src_E = compute_int(V_hat_1, P_hat_1)
-#    src_Z = compute_int(V_hat_2, P_hat_2)
-#    src_W3 = compute_int(V_hat_3, P_hat_3)
-
-    dE = e_n_HF - e_n_LF
-    dZ = z_n_HF - z_n_LF
-    dW3 = w3_n_HF - w3_n_LF
-    
-#    tau_1 = np.tanh(dE/e_n_LF)*np.sign(src_E)
-#    tau_2 = np.tanh(dZ/z_n_LF)*np.sign(src_Z)
-#    tau_3 = 10**-4*np.tanh(dW3/w3_n_LF)*np.sign(src_W3)
-    
-    _tau_1 = dE/compute_int(V_hat_1, P_hat_1)
-    _tau_2 = dZ/compute_int(V_hat_2, P_hat_2)
-    _tau_3 = dW3/compute_int(V_hat_3, P_hat_3)
+#    psi_hat_n_LF = get_psi_hat(w_hat_n_LF)
+#    w_n_LF = np.fft.irfft2(w_hat_n_LF)
+#    w_hat_n_LF_squared = P_LF*np.fft.rfft2(w_n_LF**2)
+#    
+#    V_hat_1 = -psi_hat_n_LF
+#    V_hat_2 = w_hat_n_LF
+#    V_hat_3 = w_hat_n_LF_squared
+#    
+#    T_hat_11 = -psi_hat_n_LF
+#    T_hat_12 = w_hat_n_LF
+#    T_hat_13 = w_hat_n_LF_squared
+#    
+#    T_hat_21 = w_hat_n_LF
+#    T_hat_22 = -psi_hat_n_LF
+#    T_hat_23 = w_hat_n_LF_squared
+#    
+#    T_hat_31 = w_hat_n_LF_squared
+#    T_hat_32 = -psi_hat_n_LF
+#    T_hat_33 = w_hat_n_LF    
+#
+#    ##############################
+#    
+#    T_hat = np.zeros([3,3,N,int(N/2+1)]) + 0.0j
+#    T_hat[0,0] = T_hat_11
+#    T_hat[0,1] = T_hat_12
+#    T_hat[0,2] = T_hat_13
+#
+#    T_hat[1,0] = T_hat_21
+#    T_hat[1,1] = T_hat_22
+#    T_hat[1,2] = T_hat_23
+#
+#    T_hat[2,0] = T_hat_31
+#    T_hat[2,1] = T_hat_32
+#    T_hat[2,2] = T_hat_33
+#    
+#    V_hat = np.zeros([3,N,int(N/2+1)]) + 0.0j
+#    V_hat[0] = V_hat_1
+#    V_hat[1] = V_hat_2
+#    V_hat[2] = V_hat_3
+#    
+#    c_ij = compute_cij(T_hat, V_hat)
+#    c_12 = c_ij[0,0]; c_13 = c_ij[0,1]
+#    c_22 = c_ij[1,0]; c_23 = c_ij[1,1]
+#    c_32 = c_ij[2,0]; c_33 = c_ij[2,1]
+#    
+#    P_hat_1 = T_hat_11 - c_12*T_hat_12 - c_13*T_hat_13
+#    P_hat_2 = T_hat_21 - c_22*T_hat_22 - c_23*T_hat_23
+#    P_hat_3 = T_hat_31 - c_32*T_hat_32 - c_33*T_hat_33
+#
+##    src_E = compute_int(V_hat_1, P_hat_1)
+##    src_Z = compute_int(V_hat_2, P_hat_2)
+##    src_W3 = compute_int(V_hat_3, P_hat_3)
+#
+#    dE = e_n_HF - e_n_LF
+#    dZ = z_n_HF - z_n_LF
+#    dW3 = w3_n_HF - w3_n_LF
+#    
+##    tau_1 = np.tanh(dE/e_n_LF)*np.sign(src_E)
+##    tau_2 = np.tanh(dZ/z_n_LF)*np.sign(src_Z)
+##    tau_3 = 10**-4*np.tanh(dW3/w3_n_LF)*np.sign(src_W3)
+#    
+#    src1 = compute_int(V_hat_1, P_hat_1)
+#    src2 = compute_int(V_hat_2, P_hat_2)
+#    src3 = compute_int(V_hat_3, P_hat_3)
+#    
+#    tau_1 = dE/src1
+#    tau_2 = dZ/src2
+#    tau_3 = dW3/src3
    
     #exact orthogonal pattern surrogate
     if eddy_forcing_type == 'tau_ortho':
         #EF_hat = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime
-        EF_hat = -_tau_1*P_hat_1 - _tau_2*P_hat_2 - _tau_3*P_hat_3
+        EF_hat = -tau_1*P_hat_1 - tau_2*P_hat_2 - tau_3*P_hat_3
 
     #unparameterized solution
     elif eddy_forcing_type == 'unparam':
@@ -560,14 +654,28 @@ for n in range(n_steps):
 
         e_n_HF, z_n_HF, w3_n_HF = get_EZS(P_LF*w_hat_n_HF)
         e_n_LF, z_n_LF, w3_n_LF = get_EZS(w_hat_n_LF)
+        EF = np.fft.irfft2(EF_hat)
+        
+        w_n_LF = np.fft.irfft2(w_hat_n_LF)
+        
+        #convert rfft2 coefficients to fft2 coefficients
+        w_hat_full = np.zeros([N, N]) + 0.0j
+        w_hat_full[0:N, 0:int(N/2+1)] = w_hat_n_LF
+        w_hat_full[map_I, map_J] = np.conjugate(w_hat_n_LF[I, J])
+        w_hat_full *= P_full
+        
+        w_n_LF_full = np.fft.ifft2(w_hat_full)
         
         T.append(t)
         E_LF.append(e_n_LF); Z_LF.append(z_n_LF)
         E_HF.append(e_n_HF); Z_HF.append(z_n_HF)
         W3_HF.append(w3_n_HF); W3_LF.append(w3_n_LF)
+#        TAU1.append(tau_1); TAU2.append(tau_2); TAU3.append(tau_3)
         
-        print('e_n_HF: %.4f' % e_n_HF, 'z_n_HF: %.4f' % z_n_HF, 'w3_n_HF: %.4f' % w3_n_HF)
-        print('e_n_LF: %.4f' % e_n_LF, 'z_n_LF: %.4f' % z_n_LF, 'w3_n_LF: %.4f' % w3_n_LF)
+        print('e_n_HF: %.4e' % e_n_HF, 'z_n_HF: %.4e' % z_n_HF, 'w3_n_HF: %.4e' % w3_n_HF)
+        print('e_n_LF: %.4e' % e_n_LF, 'z_n_LF: %.4e' % z_n_LF, 'w3_n_LF: %.4e' % w3_n_LF)
+        
+        #compute_qoi(w_hat_n_LF)
         
         drawnow(draw)
         

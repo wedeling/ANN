@@ -1,6 +1,6 @@
 def get_pde(X, Npoints = 100):
 
-    kernel = stats.gaussian_kde(X)
+    kernel = stats.gaussian_kde(X, bw_method='scott')
     x = np.linspace(np.min(X), np.max(X), Npoints)
     pde = kernel.evaluate(x)
     return x, pde
@@ -21,8 +21,8 @@ HOME = os.path.abspath(os.path.dirname(__file__))
 ###########################
 Omega = 7.292*10**-5
 day = 24*60**2*Omega
-sim_ID = 'tau_EZ_T5_n_lags1'
-t_end = (250.0 + 5000.)*day 
+sim_ID = 'gen_tau'
+t_end = (250.0 + 10*365.)*day 
 burn = 0#np.int(365*day)
 
 fig = plt.figure(figsize=[8, 4])
@@ -37,7 +37,7 @@ ax2 = fig.add_subplot(122, xlabel=r'enstropy', yticks = [])
 #fname = HOME + '/samples/' + sim_ID + '_' + flags['input_file']  + '_t_' + str(np.around(t_end/day,1)) + '.hdf5'
 
 fname = HOME + '/samples/' + sim_ID + '_t_' + str(np.around(t_end/day,1)) + '.hdf5'
-fname_training = HOME + '/samples/tau_EZ_training_t_3170.0.hdf5'  
+#fname_training = HOME + '/samples/tau_EZ_training_t_3170.0.hdf5'  
 
 print('Loading samples ', fname)
 
@@ -50,6 +50,7 @@ try:
 #
     x_E_LF, pdf_E_LF = get_pde(h5f['e_n_LF'])
     x_Z_LF, pdf_Z_LF = get_pde(h5f['z_n_LF'])
+    x_W3_LF, pdf_W3_LF = get_pde(h5f['w3_n_LF'])
 
     ax1.plot(x_E_LF, pdf_E_LF, label=r'$\mathrm{reduced}$')
     ax2.plot(x_Z_LF, pdf_Z_LF, label=r'$\mathrm{reduced}$')
@@ -62,6 +63,7 @@ try:
    
     ax1.plot(x_E_HF, pdf_E_HF, '--k', label=r'$\mathrm{reference}$')
     ax2.plot(x_Z_HF, pdf_Z_HF, '--k', label=r'$\mathrm{reference}$')
+    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
 
     #ax1.plot(x_E_UP, pdf_E_UP, ':k', label=r'$\mathrm{unparam.}$')
     #ax2.plot(x_Z_UP, pdf_Z_UP, ':k', label=r'$\mathrm{unparam.}$')
@@ -73,20 +75,15 @@ try:
    
     plt.tight_layout()
 
-    fig = plt.figure()
-    plt.subplot(121, title=r'$\Delta E$', xlabel=r'$t$')
-#    plt.plot(h5f['t'], h5f['r[0]'])
-#    plt.plot(h5f['t'], h5f['dE_train'], linewidth=4)
-    plt.plot(h5f['t'], h5f['e_n_LF'], 'r')
-    plt.plot(h5f['t'], h5f['e_n_HF'], 'b')
-    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-    plt.subplot(122, title=r'$\Delta Z$', xlabel=r'$t$')
-#    plt.plot(h5f['t'], h5f['r[1]'])
-#    plt.plot(h5f['t'], h5f['dZ_train'], linewidth=4)
-    plt.plot(h5f['t'], h5f['z_n_LF'], 'r')
-    plt.plot(h5f['t'], h5f['z_n_HF'], 'b')
-    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-    plt.tight_layout()
+#    fig = plt.figure()
+#    plt.subplot(121, title=r'$\Delta E$', xlabel=r'$t$')
+#    plt.plot(h5f['t'], h5f['e_n_LF'], 'r')
+#    plt.plot(h5f['t'], h5f['e_n_HF'], 'b')
+#    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+#    plt.subplot(122, title=r'$\Delta Z$', xlabel=r'$t$')
+#    plt.plot(h5f['t'], h5f['z_n_LF'], 'r')
+#    plt.plot(h5f['t'], h5f['z_n_HF'], 'b')
+#    plt.tight_layout()
 
 except IOError:
     print('*****************************')
