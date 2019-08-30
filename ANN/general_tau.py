@@ -403,8 +403,8 @@ mu = 1.0/(day*decay_time_mu)
 
 #start, end time, end time of data (training period), time step
 dt = 0.01
-t = 250.0*day
-t_end = t + 10*365*day
+t = 0.0*day
+t_end = t + 1*day
 n_steps = np.int(np.round((t_end-t)/dt))
 
 #############
