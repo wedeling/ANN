@@ -84,21 +84,21 @@ def store_samples_hdf5():
     h5f.close()    
 
 def draw():
-    plt.subplot(121)
-    plt.contourf(x, y, w_n_LF, 100)
-    plt.subplot(122)
-    plt.contourf(x, y, w_n_LF_full, 100)
+#    plt.subplot(121)
+#    plt.contourf(x, y, w_n_LF, 100)
+#    plt.subplot(122)
+#    plt.contourf(x, y, w_n_LF_full, 100)
 
-#    plt.subplot(131, title=r'$E$', xlabel=r'$t\;[day]$')
-#    plt.plot(np.array(T)/day, E_HF, 'o')
-#    plt.plot(np.array(T)/day, E_LF)
-#    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-#    plt.subplot(132, title=r'$Z$', xlabel=r'$t\;[day]$')
-#    plt.plot(np.array(T)/day, Z_HF, 'o')
-#    plt.plot(np.array(T)/day, Z_LF)
-#    plt.subplot(133, title=r'$W3$', xlabel=r'$t\;[day]$')
-#    plt.plot(np.array(T)/day, W3_HF, 'o')
-#    plt.plot(np.array(T)/day, W3_LF)
+    plt.subplot(131, title=r'$E$', xlabel=r'$t\;[day]$')
+    plt.plot(np.array(T)/day, E_HF, 'o')
+    plt.plot(np.array(T)/day, E_LF)
+    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+    plt.subplot(132, title=r'$Z$', xlabel=r'$t\;[day]$')
+    plt.plot(np.array(T)/day, Z_HF, 'o')
+    plt.plot(np.array(T)/day, Z_LF)
+    plt.subplot(133, title=r'$W3$', xlabel=r'$t\;[day]$')
+    plt.plot(np.array(T)/day, W3_HF, 'o')
+    plt.plot(np.array(T)/day, W3_LF)
 #    plt.subplot(133, title=r'$\tau$', xlabel=r'$t\;[day]$')
 #    plt.plot(np.array(T)/day, TAU1)
 #    plt.plot(np.array(T)/day, TAU2)
@@ -332,7 +332,7 @@ plt.close('all')
 plt.rcParams['image.cmap'] = 'seismic'
 
 #number of gridpoints in 1D
-I = 6
+I = 8
 N = 2**I
 
 #2D grid
@@ -370,7 +370,7 @@ k_squared_no_zero_full[0,0] = 1.0
 
 #cutoff in pseudospectral method
 Ncutoff = N/3
-Ncutoff_LF = 2**(I-0)/3 
+Ncutoff_LF = 2**(I-2)/3 
 
 #spectral filter
 P = get_P(Ncutoff)
@@ -412,7 +412,7 @@ n_steps = np.int(np.round((t_end-t)/dt))
 #############
 
 #simulation name
-sim_ID = 'unparam'
+sim_ID = 'gen_tau_3track'
 #framerate of storing data, plotting results, computing correlations (1 = every integration time step)
 store_frame_rate = 1
 plot_frame_rate = np.floor(1.0*day/dt).astype('int')
@@ -423,10 +423,10 @@ S = np.floor(n_steps/store_frame_rate).astype('int')
 state_store = True       #store the state at the end
 restart = True          #restart from prev state
 store = True            #store data
-plot = False             #plot results while running, requires drawnow package
-compute_ref = False      #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
+plot = False            #plot results while running, requires drawnow package
+compute_ref = True      #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
 
-eddy_forcing_type = 'unparam'  
+eddy_forcing_type = 'tau_ortho'  
 
 store_ID = sim_ID 
     
@@ -437,15 +437,15 @@ store_ID = sim_ID
 #QoI to store, First letter in caps implies an NxN field, otherwise a scalar 
 
 #TRAINING DATA SET
-#QoI = ['z_n_HF', 'e_n_HF', 'w3_n_HF', 
-#       'z_n_LF', 'e_n_LF', 'w3_n_LF', 
-#       'src1', 'src2', 
-#       'c_12', 'c_22', 
-#       'tau_1', 'tau_2', 
-#       'dE', 'dZ']
+QoI = ['z_n_HF', 'e_n_HF', 'w3_n_HF', 
+       'z_n_LF', 'e_n_LF', 'w3_n_LF', 
+       'src1', 'src2', 'src3',
+       'c_12', 'c_13', 'c_22', 'c_23', 'c_32', 'c_33',
+       'tau_1', 'tau_2', 'tau_3',
+       'dE', 'dZ', 'dW3']
 
 #PREDICTION DATA SET
-QoI = ['z_n_LF', 'e_n_LF', 'w3_n_LF', 't']
+#QoI = ['z_n_LF', 'e_n_LF', 'w3_n_LF', 't']
 
 Q = len(QoI)
 
@@ -556,74 +556,74 @@ for n in range(n_steps):
     # generalized scalar tracking #
     ###############################
     
-#    psi_hat_n_LF = get_psi_hat(w_hat_n_LF)
-#    w_n_LF = np.fft.irfft2(w_hat_n_LF)
-#    w_hat_n_LF_squared = P_LF*np.fft.rfft2(w_n_LF**2)
-#    
-#    V_hat_1 = -psi_hat_n_LF
-#    V_hat_2 = w_hat_n_LF
-#    V_hat_3 = w_hat_n_LF_squared
-#    
-#    T_hat_11 = -psi_hat_n_LF
-#    T_hat_12 = w_hat_n_LF
-#    T_hat_13 = w_hat_n_LF_squared
-#    
-#    T_hat_21 = w_hat_n_LF
-#    T_hat_22 = -psi_hat_n_LF
-#    T_hat_23 = w_hat_n_LF_squared
-#    
-#    T_hat_31 = w_hat_n_LF_squared
-#    T_hat_32 = -psi_hat_n_LF
-#    T_hat_33 = w_hat_n_LF    
-#
-#    ##############################
-#    
-#    T_hat = np.zeros([3,3,N,int(N/2+1)]) + 0.0j
-#    T_hat[0,0] = T_hat_11
-#    T_hat[0,1] = T_hat_12
-#    T_hat[0,2] = T_hat_13
-#
-#    T_hat[1,0] = T_hat_21
-#    T_hat[1,1] = T_hat_22
-#    T_hat[1,2] = T_hat_23
-#
-#    T_hat[2,0] = T_hat_31
-#    T_hat[2,1] = T_hat_32
-#    T_hat[2,2] = T_hat_33
-#    
-#    V_hat = np.zeros([3,N,int(N/2+1)]) + 0.0j
-#    V_hat[0] = V_hat_1
-#    V_hat[1] = V_hat_2
-#    V_hat[2] = V_hat_3
-#    
-#    c_ij = compute_cij(T_hat, V_hat)
-#    c_12 = c_ij[0,0]; c_13 = c_ij[0,1]
-#    c_22 = c_ij[1,0]; c_23 = c_ij[1,1]
-#    c_32 = c_ij[2,0]; c_33 = c_ij[2,1]
-#    
-#    P_hat_1 = T_hat_11 - c_12*T_hat_12 - c_13*T_hat_13
-#    P_hat_2 = T_hat_21 - c_22*T_hat_22 - c_23*T_hat_23
-#    P_hat_3 = T_hat_31 - c_32*T_hat_32 - c_33*T_hat_33
-#
-##    src_E = compute_int(V_hat_1, P_hat_1)
-##    src_Z = compute_int(V_hat_2, P_hat_2)
-##    src_W3 = compute_int(V_hat_3, P_hat_3)
-#
-#    dE = e_n_HF - e_n_LF
-#    dZ = z_n_HF - z_n_LF
-#    dW3 = w3_n_HF - w3_n_LF
-#    
-##    tau_1 = np.tanh(dE/e_n_LF)*np.sign(src_E)
-##    tau_2 = np.tanh(dZ/z_n_LF)*np.sign(src_Z)
-##    tau_3 = 10**-4*np.tanh(dW3/w3_n_LF)*np.sign(src_W3)
-#    
-#    src1 = compute_int(V_hat_1, P_hat_1)
-#    src2 = compute_int(V_hat_2, P_hat_2)
-#    src3 = compute_int(V_hat_3, P_hat_3)
-#    
-#    tau_1 = dE/src1
-#    tau_2 = dZ/src2
-#    tau_3 = dW3/src3
+    psi_hat_n_LF = get_psi_hat(w_hat_n_LF)
+    w_n_LF = np.fft.irfft2(w_hat_n_LF)
+    w_hat_n_LF_squared = P_LF*np.fft.rfft2(w_n_LF**2)
+    
+    V_hat_1 = -psi_hat_n_LF
+    V_hat_2 = w_hat_n_LF
+    V_hat_3 = w_hat_n_LF_squared
+    
+    T_hat_11 = -psi_hat_n_LF
+    T_hat_12 = w_hat_n_LF
+    T_hat_13 = w_hat_n_LF_squared
+    
+    T_hat_21 = w_hat_n_LF
+    T_hat_22 = -psi_hat_n_LF
+    T_hat_23 = w_hat_n_LF_squared
+    
+    T_hat_31 = w_hat_n_LF_squared
+    T_hat_32 = -psi_hat_n_LF
+    T_hat_33 = w_hat_n_LF    
+
+    ##############################
+    
+    T_hat = np.zeros([3,3,N,int(N/2+1)]) + 0.0j
+    T_hat[0,0] = T_hat_11
+    T_hat[0,1] = T_hat_12
+    T_hat[0,2] = T_hat_13
+
+    T_hat[1,0] = T_hat_21
+    T_hat[1,1] = T_hat_22
+    T_hat[1,2] = T_hat_23
+
+    T_hat[2,0] = T_hat_31
+    T_hat[2,1] = T_hat_32
+    T_hat[2,2] = T_hat_33
+    
+    V_hat = np.zeros([3,N,int(N/2+1)]) + 0.0j
+    V_hat[0] = V_hat_1
+    V_hat[1] = V_hat_2
+    V_hat[2] = V_hat_3
+    
+    c_ij = compute_cij(T_hat, V_hat)
+    c_12 = c_ij[0,0]; c_13 = c_ij[0,1]
+    c_22 = c_ij[1,0]; c_23 = c_ij[1,1]
+    c_32 = c_ij[2,0]; c_33 = c_ij[2,1]
+    
+    P_hat_1 = T_hat_11 - c_12*T_hat_12 - c_13*T_hat_13
+    P_hat_2 = T_hat_21 - c_22*T_hat_22 - c_23*T_hat_23
+    P_hat_3 = T_hat_31 - c_32*T_hat_32 - c_33*T_hat_33
+
+#    src_E = compute_int(V_hat_1, P_hat_1)
+#    src_Z = compute_int(V_hat_2, P_hat_2)
+#    src_W3 = compute_int(V_hat_3, P_hat_3)
+
+    dE = e_n_HF - e_n_LF
+    dZ = z_n_HF - z_n_LF
+    dW3 = w3_n_HF - w3_n_LF
+    
+#    tau_1 = np.tanh(dE/e_n_LF)*np.sign(src_E)
+#    tau_2 = np.tanh(dZ/z_n_LF)*np.sign(src_Z)
+#    tau_3 = 10**-4*np.tanh(dW3/w3_n_LF)*np.sign(src_W3)
+    
+    src1 = compute_int(V_hat_1, P_hat_1)
+    src2 = compute_int(V_hat_2, P_hat_2)
+    src3 = compute_int(V_hat_3, P_hat_3)
+    
+    tau_1 = dE/src1
+    tau_2 = dZ/src2
+    tau_3 = dW3/src3
    
     #exact orthogonal pattern surrogate
     if eddy_forcing_type == 'tau_ortho':
@@ -670,7 +670,7 @@ for n in range(n_steps):
         E_LF.append(e_n_LF); Z_LF.append(z_n_LF)
         E_HF.append(e_n_HF); Z_HF.append(z_n_HF)
         W3_HF.append(w3_n_HF); W3_LF.append(w3_n_LF)
-#        TAU1.append(tau_1); TAU2.append(tau_2); TAU3.append(tau_3)
+        TAU1.append(tau_1); TAU2.append(tau_2); TAU3.append(tau_3)
         
         print('e_n_HF: %.4e' % e_n_HF, 'z_n_HF: %.4e' % z_n_HF, 'w3_n_HF: %.4e' % w3_n_HF)
         print('e_n_LF: %.4e' % e_n_LF, 'z_n_LF: %.4e' % z_n_LF, 'w3_n_LF: %.4e' % w3_n_LF)
