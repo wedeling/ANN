@@ -14,6 +14,8 @@ from scipy import stats
 import sys
 import json
 
+plt.close('all')
+
 HOME = os.path.abspath(os.path.dirname(__file__))
     
 ###########################
@@ -21,13 +23,14 @@ HOME = os.path.abspath(os.path.dirname(__file__))
 ###########################
 Omega = 7.292*10**-5
 day = 24*60**2*Omega
-sim_ID = 'gen_tau'
+sim_ID = 'gen_tau_3track'
 t_end = (250.0 + 10*365.)*day 
 burn = 0#np.int(365*day)
 
-fig = plt.figure(figsize=[8, 4])
-ax1 = fig.add_subplot(121, xlabel=r'energy', yticks = [])
-ax2 = fig.add_subplot(122, xlabel=r'enstropy', yticks = [])
+fig = plt.figure(figsize=[12, 4])
+ax1 = fig.add_subplot(131, xlabel=r'$E$', yticks = [])
+ax2 = fig.add_subplot(132, xlabel=r'$Z$', yticks = [])
+ax3 = fig.add_subplot(133, xlabel=r'$Z_3$', yticks = [])
 
 #fpath = sys.argv[1]
 #fp = open(fpath, 'r')
@@ -37,7 +40,7 @@ ax2 = fig.add_subplot(122, xlabel=r'enstropy', yticks = [])
 #fname = HOME + '/samples/' + sim_ID + '_' + flags['input_file']  + '_t_' + str(np.around(t_end/day,1)) + '.hdf5'
 
 fname = HOME + '/samples/' + sim_ID + '_t_' + str(np.around(t_end/day,1)) + '.hdf5'
-#fname_training = HOME + '/samples/tau_EZ_training_t_3170.0.hdf5'  
+fname_unparam = HOME + '/samples/unparam_t_3900.0.hdf5'  
 
 print('Loading samples ', fname)
 
@@ -45,25 +48,34 @@ try:
     h5f = h5py.File(fname, 'r')
     print(h5f.keys())
 
-#    h5f = h5py.File(fname_training, 'r')
-#    print(h5f.keys())
-#
+    h5f_unparam = h5py.File(fname_unparam, 'r')
+    print(h5f_unparam.keys())
+    x_E_UN, pdf_E_UN = get_pde(h5f_unparam['e_n_LF'])
+    x_Z_UN, pdf_Z_UN = get_pde(h5f_unparam['z_n_LF'])
+    x_W3_UN, pdf_W3_UN = get_pde(h5f_unparam['w3_n_LF'])
+
+    ax1.plot(x_E_UN, pdf_E_UN, ':', label=r'$\mathrm{eddy\;visc}$')
+    ax2.plot(x_Z_UN, pdf_Z_UN, ':', label=r'$\mathrm{eddy\;visc}$')
+    ax3.plot(x_W3_UN, pdf_W3_UN, ':', label=r'$\mathrm{eddy\;visc}$')
+
     x_E_LF, pdf_E_LF = get_pde(h5f['e_n_LF'])
     x_Z_LF, pdf_Z_LF = get_pde(h5f['z_n_LF'])
     x_W3_LF, pdf_W3_LF = get_pde(h5f['w3_n_LF'])
 
     ax1.plot(x_E_LF, pdf_E_LF, label=r'$\mathrm{reduced}$')
     ax2.plot(x_Z_LF, pdf_Z_LF, label=r'$\mathrm{reduced}$')
+    ax3.plot(x_W3_LF, pdf_W3_LF, label=r'$\mathrm{reduced}$')
    
     x_E_HF, pdf_E_HF = get_pde(h5f['e_n_HF'])
     x_Z_HF, pdf_Z_HF = get_pde(h5f['z_n_HF'])
+    x_W3_HF, pdf_W3_HF = get_pde(h5f['w3_n_HF'])
 
     #x_E_UP, pdf_E_UP = get_pde(h5f['e_n_UP'])
     #x_Z_UP, pdf_Z_UP = get_pde(h5f['z_n_UP'])
    
     ax1.plot(x_E_HF, pdf_E_HF, '--k', label=r'$\mathrm{reference}$')
     ax2.plot(x_Z_HF, pdf_Z_HF, '--k', label=r'$\mathrm{reference}$')
-    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+    ax3.plot(x_W3_HF, pdf_W3_HF, '--k', label=r'$\mathrm{reference}$')
 
     #ax1.plot(x_E_UP, pdf_E_UP, ':k', label=r'$\mathrm{unparam.}$')
     #ax2.plot(x_Z_UP, pdf_Z_UP, ':k', label=r'$\mathrm{unparam.}$')
@@ -90,11 +102,9 @@ except IOError:
     print(fname, ' not found')
     print('*****************************')
 
-leg = plt.legend(loc=0)
-leg.set_draggable(True)
-
 ax1.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
 ax2.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+ax3.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
 
 fig.tight_layout()
 
