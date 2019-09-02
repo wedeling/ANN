@@ -418,8 +418,9 @@ k_squared_full = kx_full**2 + ky_full**2
 k_squared_no_zero_full = np.copy(k_squared_full)
 k_squared_no_zero_full[0,0] = 1.0
 
-binnumbers, bins = freq_map()
-N_bins = bins.size
+#still contains error
+#binnumbers, bins = freq_map()
+#N_bins = bins.size
 
 #cutoff in pseudospectral method
 Ncutoff = N/3
@@ -468,35 +469,36 @@ n_steps = np.int(np.round((t_end-t)/dt))
 #simulation name
 sim_ID = 'gen_tau'
 #framerate of storing data, plotting results, computing correlations (1 = every integration time step)
-store_frame_rate = 1
+store_frame_rate = np.floor(5.0*day/dt).astype('int')
+#store_frame_rate = 1
 plot_frame_rate = np.floor(1.0*day/dt).astype('int')
 #length of data array
 S = np.floor(n_steps/store_frame_rate).astype('int')
 
 #Manual specification of flags 
-state_store = False       #store the state at the end
+state_store = False     #store the state at the end
 restart = True          #restart from prev state
-store = False            #store data
-plot = True            #plot results while running, requires drawnow package
+store = True            #store data
+plot = False            #plot results while running, requires drawnow package
 compute_ref = True      #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
 
 eddy_forcing_type = 'tau_ortho'  
 
-store_ID = sim_ID 
+store_ID = sim_ID + '_spectrum'
     
 ###############################
 # SPECIFY WHICH DATA TO STORE #
 ###############################
 
-#QoI to store, First letter in caps implies an NxN field, otherwise a scalar 
-
 #TRAINING DATA SET
-QoI = ['z_n_HF', 'e_n_HF', 'w3_n_HF', 
-       'z_n_LF', 'e_n_LF', 'w3_n_LF', 
-       'src1', 'src2', 'src3',
-       'c_12', 'c_13', 'c_22', 'c_23', 'c_32', 'c_33',
-       'tau_1', 'tau_2', 'tau_3',
-       'dE', 'dZ', 'dW3']
+#QoI = ['z_n_HF', 'e_n_HF', 'w3_n_HF', 
+#       'z_n_LF', 'e_n_LF', 'w3_n_LF', 
+#       'src1', 'src2', 'src3',
+#       'c_12', 'c_13', 'c_22', 'c_23', 'c_32', 'c_33',
+#       'tau_1', 'tau_2', 'tau_3',
+#       'dE', 'dZ', 'dW3']
+
+QoI = ['w_hat_n_LF', 'w_hat_n_HF']
 
 #PREDICTION DATA SET
 #QoI = ['z_n_LF', 'e_n_LF', 'w3_n_LF', 't']
@@ -512,8 +514,8 @@ if store == True:
     
     for q in range(Q):
         
-        #a field
-        if QoI[q][0].isupper():
+        #assume a field contains the string '_hat_'
+        if '_hat_' in QoI[q]:
             samples[QoI[q]] = np.zeros([S, N, int(N/2+1)]) + 0.0j
         #a scalar
         else:
