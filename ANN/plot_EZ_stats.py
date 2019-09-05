@@ -30,7 +30,7 @@ burn = 0#np.int(365*day)
 fig = plt.figure(figsize=[12, 4])
 ax1 = fig.add_subplot(131, xlabel=r'$E$', yticks = [])
 ax2 = fig.add_subplot(132, xlabel=r'$Z$', yticks = [])
-ax3 = fig.add_subplot(133, xlabel=r'$Z_3$', yticks = [])
+ax3 = fig.add_subplot(133, xlabel=r'$Z_2$', yticks = [])
 
 #fpath = sys.argv[1]
 #fp = open(fpath, 'r')

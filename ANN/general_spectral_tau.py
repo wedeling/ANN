@@ -51,6 +51,18 @@ def get_P(cutoff):
                 
     return P
 
+def get_P_k():
+    
+    k_min = Ncutoff_LF
+    k_max = np.max(P_LF_full*binnumbers)
+    
+    P_k = np.zeros([N, N])    
+    idx0, idx1 = np.where((binnumbers >= k_min) & (binnumbers <= k_max))
+    
+    P_k[idx0, idx1] = 1.0
+    
+    return P_k[0:N, 0:int(N/2+1)] 
+
 #compute spectral filter
 def get_P_full(cutoff):
 
@@ -93,12 +105,12 @@ def draw():
 #    plt.tight_layout()
     plt.subplot(121, xscale='log', yscale='log')
     plt.plot(bins+1.5, E_spec_HF, '--')
-    plt.plot(bins+1.5, E_spec_LF, '--')
+    plt.plot(bins+1.5, E_spec_LF)
     plt.plot([Ncutoff_LF + 1.5, Ncutoff_LF + 1.5], [10, 0], 'lightgray')
     plt.plot([np.sqrt(2)*Ncutoff_LF + 1.5, np.sqrt(2)*Ncutoff_LF + 1.5], [10, 0], 'lightgray')
     plt.subplot(122, xscale='log', yscale='log')
     plt.plot(bins+1.5, Z_spec_HF, '--')
-    plt.plot(bins+1.5, Z_spec_LF, '--')
+    plt.plot(bins+1.5, Z_spec_LF)
     plt.plot([Ncutoff_LF + 1.5, Ncutoff_LF + 1.5], [10, 0], 'lightgray')
     plt.plot([np.sqrt(2)*Ncutoff_LF + 1.5, np.sqrt(2)*Ncutoff_LF + 1.5], [10, 0], 'lightgray')
     
@@ -385,9 +397,6 @@ plt.rcParams['image.cmap'] = 'seismic'
 
 HOME = os.path.abspath(os.path.dirname(__file__))
 
-plt.close('all')
-plt.rcParams['image.cmap'] = 'seismic'
-
 #number of gridpoints in 1D
 I = 8
 N = 2**I
@@ -438,9 +447,10 @@ P_U = P - P_LF
 P_full = get_P_full(Ncutoff)
 P_LF_full = get_P_full(Ncutoff_LF)
 
-
 binnumbers, bins = freq_map()
 N_bins = bins.size
+P_k = get_P_k()
+P_k = P_LF
 
 #map from the rfft2 coefficient indices to fft2 coefficient indices
 #Use: see compute_E_Z subroutine
@@ -465,7 +475,7 @@ mu = 1.0/(day*decay_time_mu)
 
 #start, end time, end time of data (training period), time step
 dt = 0.01
-t = 250.0*day
+t = 0.0*day
 t_end = t + 250*day
 n_steps = np.int(np.round((t_end-t)/dt))
 
@@ -483,13 +493,13 @@ plot_frame_rate = np.floor(1.0*day/dt).astype('int')
 S = np.floor(n_steps/store_frame_rate).astype('int')
 
 #Manual specification of flags 
-state_store = False     #store the state at the end
-restart = True          #restart from prev state
+state_store = True     #store the state at the end
+restart = False         #restart from prev state
 store = False            #store data
 plot = True            #plot results while running, requires drawnow package
 compute_ref = True      #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
 
-eddy_forcing_type = 'unparam'  
+eddy_forcing_type = 'tau_ortho'  
 
 store_ID = sim_ID + '_spectrum'
     
@@ -603,12 +613,12 @@ for n in range(n_steps):
 
         #reference energy and enstrophy
         #e_np1_HF, z_np1_HF, _ = get_EZS(P_LF*w_hat_np1_HF)
-        e_n_HF, w1_n_HF, z_n_HF, w3_n_HF = get_EZS(P_LF*w_hat_n_HF)
+        e_n_HF, w1_n_HF, z_n_HF, w3_n_HF = get_EZS(P_k*w_hat_n_HF)
         
     #######################################
     # covariates (conditioning variables) #
     #######################################
-    e_n_LF, w1_n_LF, z_n_LF, w3_n_LF = get_EZS(w_hat_n_LF)
+    e_n_LF, w1_n_LF, z_n_LF, w3_n_LF = get_EZS(P_k*w_hat_n_LF)
 #    psi_n_LF = np.fft.irfft2(get_psi_hat(w_hat_n_LF))
 #    u_n_LF = 0.5*simps(simps(psi_n_LF*F, axis), axis)/(2.0*np.pi)**2
 #    w_n_LF = np.fft.irfft2(w_hat_n_LF)
@@ -627,16 +637,16 @@ for n in range(n_steps):
         w_n_LF = np.fft.irfft2(w_hat_n_LF)
         w_hat_n_LF_squared = P_LF*np.fft.rfft2(w_n_LF**2)
         
-        V_hat_1 = -psi_hat_n_LF
-        V_hat_2 = w_hat_n_LF
+        V_hat_1 = -P_k*psi_hat_n_LF
+        V_hat_2 = P_k*w_hat_n_LF
     #    V_hat_3 = w_hat_n_LF_squared
         
-        T_hat_11 = -psi_hat_n_LF
-        T_hat_12 = w_hat_n_LF
+        T_hat_11 = -P_k*psi_hat_n_LF
+        T_hat_12 = P_k*w_hat_n_LF
     #    T_hat_13 = w_hat_n_LF_squared
         
-        T_hat_21 = w_hat_n_LF
-        T_hat_22 = -psi_hat_n_LF
+        T_hat_21 = P_k*w_hat_n_LF
+        T_hat_22 = -P_k*psi_hat_n_LF
     #    T_hat_23 = w_hat_n_LF_squared
         
     #    T_hat_31 = w_hat_n_LF_squared
@@ -743,7 +753,7 @@ for n in range(n_steps):
         print('e_n_HF: %.4e' % e_n_HF, 'w1_n_HF: %.4e' % w1_n_HF, 'z_n_HF: %.4e' % z_n_HF, 'w3_n_HF: %.4e' % w3_n_HF)
         print('e_n_LF: %.4e' % e_n_LF, 'w1_n_LF: %.4e' % w1_n_LF, 'z_n_LF: %.4e' % z_n_LF, 'w3_n_LF: %.4e' % w3_n_LF)
         
-        E_spec_HF, Z_spec_HF = spectrum(w_hat_n_HF, P_LF_full)
+        E_spec_HF, Z_spec_HF = spectrum(w_hat_n_HF, P_full)
         E_spec_LF, Z_spec_LF = spectrum(w_hat_n_LF, P_LF_full)
         
         #compute_qoi(w_hat_n_LF)
