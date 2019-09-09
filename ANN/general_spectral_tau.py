@@ -475,8 +475,8 @@ mu = 1.0/(day*decay_time_mu)
 
 #start, end time, end time of data (training period), time step
 dt = 0.01
-t = 0.0*day
-t_end = t + 250*day
+t = 250.0*day
+t_end = t + 10*365*day
 n_steps = np.int(np.round((t_end-t)/dt))
 
 #############
@@ -484,7 +484,7 @@ n_steps = np.int(np.round((t_end-t)/dt))
 #############
 
 #simulation name
-sim_ID = 'gen_tau'
+sim_ID = 'unparam'
 #framerate of storing data, plotting results, computing correlations (1 = every integration time step)
 store_frame_rate = np.floor(5.0*day/dt).astype('int')
 #store_frame_rate = 1
@@ -495,11 +495,11 @@ S = np.floor(n_steps/store_frame_rate).astype('int')
 #Manual specification of flags 
 state_store = True     #store the state at the end
 restart = False         #restart from prev state
-store = False            #store data
-plot = True            #plot results while running, requires drawnow package
-compute_ref = True      #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
+store = True            #store data
+plot = False            #plot results while running, requires drawnow package
+compute_ref = False      #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
 
-eddy_forcing_type = 'tau_ortho'  
+eddy_forcing_type = 'unparam'  
 
 store_ID = sim_ID + '_spectrum'
     
