@@ -104,16 +104,15 @@ def draw():
 #    plt.colorbar()
 #    plt.tight_layout()
     plt.subplot(121, xscale='log', yscale='log')
-    plt.plot(bins+1.5, E_spec_HF, '--')
-    plt.plot(bins+1.5, E_spec_LF)
-    plt.plot([Ncutoff_LF + 1.5, Ncutoff_LF + 1.5], [10, 0], 'lightgray')
-    plt.plot([np.sqrt(2)*Ncutoff_LF + 1.5, np.sqrt(2)*Ncutoff_LF + 1.5], [10, 0], 'lightgray')
+    plt.plot(bins+1, E_spec_HF, '--')
+    plt.plot(bins+1, E_spec_LF)
+    plt.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
+    plt.plot([np.sqrt(2)*Ncutoff_LF + 1, np.sqrt(2)*Ncutoff_LF + 1], [10, 0], 'lightgray')
     plt.subplot(122, xscale='log', yscale='log')
-    plt.plot(bins+1.5, Z_spec_HF, '--')
-    plt.plot(bins+1.5, Z_spec_LF)
-    plt.plot([Ncutoff_LF + 1.5, Ncutoff_LF + 1.5], [10, 0], 'lightgray')
+    plt.plot(bins+1, Z_spec_HF, '--')
+    plt.plot(bins+1, Z_spec_LF)
+    plt.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
     plt.plot([np.sqrt(2)*Ncutoff_LF + 1.5, np.sqrt(2)*Ncutoff_LF + 1.5], [10, 0], 'lightgray')
-    
 #    plt.plot(np.array(T)/day, Z_LF)
 #    plt.subplot(133, title=r'$W3$', xlabel=r'$t\;[day]$')
 #    plt.plot(np.array(T)/day, W3_HF, 'o')
@@ -450,7 +449,7 @@ P_LF_full = get_P_full(Ncutoff_LF)
 binnumbers, bins = freq_map()
 N_bins = bins.size
 P_k = get_P_k()
-P_k = P_LF
+#P_k = P_LF
 
 #map from the rfft2 coefficient indices to fft2 coefficient indices
 #Use: see compute_E_Z subroutine
@@ -476,7 +475,11 @@ mu = 1.0/(day*decay_time_mu)
 #start, end time, end time of data (training period), time step
 dt = 0.01
 t = 250.0*day
+<<<<<<< HEAD
 t_end = t + 10*365*day
+=======
+t_end = t + 250*day
+>>>>>>> f27a2650657b38b151dfae3ffd1e24f69db5024e
 n_steps = np.int(np.round((t_end-t)/dt))
 
 #############
@@ -493,7 +496,7 @@ plot_frame_rate = np.floor(1.0*day/dt).astype('int')
 S = np.floor(n_steps/store_frame_rate).astype('int')
 
 #Manual specification of flags 
-state_store = True     #store the state at the end
+state_store = False     #store the state at the end
 restart = False         #restart from prev state
 store = True            #store data
 plot = False            #plot results while running, requires drawnow package
