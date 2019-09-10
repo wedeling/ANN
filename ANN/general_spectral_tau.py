@@ -103,6 +103,7 @@ def draw():
 #    plt.contourf(x, y, EF, 100)
 #    plt.colorbar()
 #    plt.tight_layout()
+
     plt.subplot(121, xscale='log', yscale='log')
     plt.plot(bins+1, E_spec_HF, '--')
     plt.plot(bins+1, E_spec_LF)
@@ -113,10 +114,19 @@ def draw():
     plt.plot(bins+1, Z_spec_LF)
     plt.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
     plt.plot([np.sqrt(2)*Ncutoff_LF + 1.5, np.sqrt(2)*Ncutoff_LF + 1.5], [10, 0], 'lightgray')
+
+#    plt.subplot(131, title=r'$E$', xlabel=r'$t\;[day]$')
+#    plt.plot(np.array(T)/day, E_HF, 'o')
+#    plt.plot(np.array(T)/day, E_LF)
+#
+#    plt.subplot(132, title=r'$Z$', xlabel=r'$t\;[day]$')
+#    plt.plot(np.array(T)/day, Z_HF, 'o')
 #    plt.plot(np.array(T)/day, Z_LF)
+#    
 #    plt.subplot(133, title=r'$W3$', xlabel=r'$t\;[day]$')
 #    plt.plot(np.array(T)/day, W3_HF, 'o')
 #    plt.plot(np.array(T)/day, W3_LF)
+#    
 #    plt.subplot(133, title=r'$\tau$', xlabel=r'$t\;[day]$')
 #    plt.plot(np.array(T)/day, TAU1)
 #    plt.plot(np.array(T)/day, TAU2)
@@ -468,13 +478,13 @@ day = 24*60**2*Omega
 decay_time_nu = 5.0
 decay_time_mu = 90.0
 nu = 1.0/(day*Ncutoff**2*decay_time_nu)
-nu_LF = 1.0/(day*Ncutoff_LF**2*decay_time_nu)
+nu_LF = 1.0/(day*Ncutoff**2*decay_time_nu)
 
 mu = 1.0/(day*decay_time_mu)
 
 #start, end time, end time of data (training period), time step
 dt = 0.01
-t = 250.0*day
+t = 0.0*day
 t_end = t + 250*day
 n_steps = np.int(np.round((t_end-t)/dt))
 
@@ -483,7 +493,7 @@ n_steps = np.int(np.round((t_end-t)/dt))
 #############
 
 #simulation name
-sim_ID = 'gen_tau'
+sim_ID = 'gen_tau_P_k'
 #framerate of storing data, plotting results, computing correlations (1 = every integration time step)
 store_frame_rate = np.floor(5.0*day/dt).astype('int')
 #store_frame_rate = 1
@@ -492,7 +502,7 @@ plot_frame_rate = np.floor(1.0*day/dt).astype('int')
 S = np.floor(n_steps/store_frame_rate).astype('int')
 
 #Manual specification of flags 
-state_store = False     #store the state at the end
+state_store = True     #store the state at the end
 restart = False         #restart from prev state
 store = False            #store data
 plot = True            #plot results while running, requires drawnow package
@@ -500,7 +510,7 @@ compute_ref = True      #compute the reference solution as well, keep at True, w
 
 eddy_forcing_type = 'tau_ortho'  
 
-store_ID = sim_ID + '_spectrum'
+store_ID = sim_ID 
     
 ###############################
 # SPECIFY WHICH DATA TO STORE #
@@ -726,31 +736,33 @@ for n in range(n_steps):
     if j == plot_frame_rate and plot == True:
         j = 0
 
-#        e_n_HF, z_n_HF, w3_n_HF = get_EZS(P_LF*w_hat_n_HF)
-#        e_n_LF, z_n_LF, w3_n_LF = get_EZS(w_hat_n_LF)
+        _e_n_HF, _w1_n_HF, _z_n_HF, _w3_n_HF = get_EZS(P_LF*w_hat_n_HF)
+        _e_n_LF, _w1_n_LF, _z_n_LF, _w3_n_LF = get_EZS(w_hat_n_LF)
         EF = np.fft.irfft2(EF_hat)
         
         w_n_LF = np.fft.irfft2(w_hat_n_LF)
         w_n_HF = np.fft.irfft2(P_LF*w_hat_n_HF)
         
-        #convert rfft2 coefficients to fft2 coefficients
-        w_hat_full = np.zeros([N, N]) + 0.0j
-        w_hat_full[0:N, 0:int(N/2+1)] = w_hat_n_LF
-        w_hat_full[map_I, map_J] = np.conjugate(w_hat_n_LF[I, J])
-        w_hat_full *= P_full
-        
-        w_n_LF_full = np.fft.ifft2(w_hat_full)
+#        #convert rfft2 coefficients to fft2 coefficients
+#        w_hat_full = np.zeros([N, N]) + 0.0j
+#        w_hat_full[0:N, 0:int(N/2+1)] = w_hat_n_LF
+#        w_hat_full[map_I, map_J] = np.conjugate(w_hat_n_LF[I, J])
+#        w_hat_full *= P_full
+#        
+#        w_n_LF_full = np.fft.ifft2(w_hat_full)
         
         T.append(t)
-        E_LF.append(e_n_LF); Z_LF.append(z_n_LF)
-        E_HF.append(e_n_HF); Z_HF.append(z_n_HF)
-        W3_HF.append(w3_n_HF); W3_LF.append(w3_n_LF)
-        W1_HF.append(w1_n_HF); W1_LF.append(w1_n_LF)
+        E_LF.append(_e_n_LF); Z_LF.append(_z_n_LF)
+        E_HF.append(_e_n_HF); Z_HF.append(_z_n_HF)
+        W3_HF.append(_w3_n_HF); W3_LF.append(_w3_n_LF)
+        W1_HF.append(_w1_n_HF); W1_LF.append(_w1_n_LF)
 
         TAU1.append(tau_1); TAU2.append(tau_2); #TAU3.append(tau_3)
         
-        print('e_n_HF: %.4e' % e_n_HF, 'w1_n_HF: %.4e' % w1_n_HF, 'z_n_HF: %.4e' % z_n_HF, 'w3_n_HF: %.4e' % w3_n_HF)
-        print('e_n_LF: %.4e' % e_n_LF, 'w1_n_LF: %.4e' % w1_n_LF, 'z_n_LF: %.4e' % z_n_LF, 'w3_n_LF: %.4e' % w3_n_LF)
+        print('e_n_HF: %.4e' % _e_n_HF, 'w1_n_HF: %.4e' % _w1_n_HF,
+              'z_n_HF: %.4e' % _z_n_HF, 'w3_n_HF: %.4e' % _w3_n_HF)
+        print('e_n_LF: %.4e' % _e_n_LF, 'w1_n_LF: %.4e' % _w1_n_LF,
+              'z_n_LF: %.4e' % _z_n_LF, 'w3_n_LF: %.4e' % _w3_n_LF)
         
         E_spec_HF, Z_spec_HF = spectrum(w_hat_n_HF, P_full)
         E_spec_LF, Z_spec_LF = spectrum(w_hat_n_LF, P_LF_full)
