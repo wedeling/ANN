@@ -51,10 +51,7 @@ def get_P(cutoff):
                 
     return P
 
-def get_P_k():
-    
-    k_min = Ncutoff_LF
-    k_max = np.max(P_LF_full*binnumbers)
+def get_P_k(k_min, k_max):
     
     P_k = np.zeros([N, N])    
     idx0, idx1 = np.where((binnumbers >= k_min) & (binnumbers <= k_max))
@@ -458,7 +455,13 @@ P_LF_full = get_P_full(Ncutoff_LF)
 
 binnumbers, bins = freq_map()
 N_bins = bins.size
-P_k = get_P_k()
+
+k_min = Ncutoff_LF - 10 
+k_max = Ncutoff_LF
+#k_max = np.max(P_LF_full*binnumbers)
+
+P_k = get_P_k(k_min, k_max)
+
 #P_k = P_LF
 
 #map from the rfft2 coefficient indices to fft2 coefficient indices
@@ -484,16 +487,8 @@ mu = 1.0/(day*decay_time_mu)
 
 #start, end time, end time of data (training period), time step
 dt = 0.01
-<<<<<<< HEAD
 t = 250.0*day
-<<<<<<< HEAD
 t_end = t + 10*365*day
-=======
-=======
-t = 0.0*day
->>>>>>> b6fb0067b77ce06139d604c3eada0a26f57ff041
-t_end = t + 250*day
->>>>>>> f27a2650657b38b151dfae3ffd1e24f69db5024e
 n_steps = np.int(np.round((t_end-t)/dt))
 
 #############
@@ -501,26 +496,22 @@ n_steps = np.int(np.round((t_end-t)/dt))
 #############
 
 #simulation name
-<<<<<<< HEAD
-sim_ID = 'unparam'
-=======
-sim_ID = 'gen_tau_P_k'
->>>>>>> b6fb0067b77ce06139d604c3eada0a26f57ff041
+sim_ID = 'gen_tau_P_k_equal_nu_3'
 #framerate of storing data, plotting results, computing correlations (1 = every integration time step)
-store_frame_rate = np.floor(5.0*day/dt).astype('int')
+store_frame_rate = np.floor(1.0*day/dt).astype('int')
 #store_frame_rate = 1
 plot_frame_rate = np.floor(1.0*day/dt).astype('int')
 #length of data array
 S = np.floor(n_steps/store_frame_rate).astype('int')
 
 #Manual specification of flags 
-state_store = True     #store the state at the end
-restart = False         #restart from prev state
+state_store = True      #store the state at the end
+restart = True         #restart from prev state
 store = True            #store data
 plot = False            #plot results while running, requires drawnow package
-compute_ref = False      #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
+compute_ref = True      #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
 
-eddy_forcing_type = 'unparam'  
+eddy_forcing_type = 'tau_ortho'  
 
 store_ID = sim_ID 
     
@@ -536,7 +527,7 @@ store_ID = sim_ID
 #       'tau_1', 'tau_2', 'tau_3',
 #       'dE', 'dZ', 'dW3']
 
-QoI = ['w_hat_n_LF', 'w_hat_n_HF']
+QoI = ['w_hat_n_LF', 'w_hat_n_HF', 'z_n_HF', 'e_n_HF', 'z_n_LF', 'e_n_LF']
 
 #PREDICTION DATA SET
 #QoI = ['z_n_LF', 'e_n_LF', 'w3_n_LF', 't']
@@ -609,14 +600,15 @@ W1_HF = []; W1_LF = []
 TAU1 = []; TAU2 = []; TAU3 = []
 TEST = []
 
-fig = plt.figure(figsize=[8, 4])
+if plot == True:
+    fig = plt.figure(figsize=[8, 4])
 
 #time loop
 for n in range(n_steps):
     
     #orthogonal patterns
-    psi_hat_n_prime = get_psi_hat_prime(w_hat_n_LF)
-    w_hat_n_prime = get_w_hat_prime(w_hat_n_LF)
+    #psi_hat_n_prime = get_psi_hat_prime(w_hat_n_LF)
+    #w_hat_n_prime = get_w_hat_prime(w_hat_n_LF)
 
     if compute_ref == True:
         
@@ -627,10 +619,10 @@ for n in range(n_steps):
         EF_hat_nm1_exact = P_LF*VgradW_hat_nm1_HF - VgradW_hat_nm1_LF 
  
         #exact tau_E and tau_Z
-        tau_E, tau_Z, dE, dZ = get_data_driven_tau_src_EZ(w_hat_n_LF, w_hat_n_HF, P_LF, 1.0, 1.0)
+        #tau_E, tau_Z, dE, dZ = get_data_driven_tau_src_EZ(w_hat_n_LF, w_hat_n_HF, P_LF, 1.0, 1.0)
     
         #E & Z tracking eddy forcing
-        EF_hat_n_ortho = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime 
+        #EF_hat_n_ortho = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime 
 
         #reference energy and enstrophy
         #e_np1_HF, z_np1_HF, _ = get_EZS(P_LF*w_hat_np1_HF)
@@ -786,7 +778,10 @@ for n in range(n_steps):
     #store samples to dict
     if j2 == store_frame_rate and store == True:
         j2 = 0
-        
+
+        e_n_HF, _, z_n_HF, _ = get_EZS(P_LF*w_hat_n_HF)
+        e_n_LF, _, z_n_LF, _ = get_EZS(w_hat_n_LF)
+
         if np.mod(n, np.round(day/dt)) == 0:
             print('n = ', n, ' of ', n_steps)
 
