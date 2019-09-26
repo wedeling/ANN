@@ -101,25 +101,25 @@ def draw():
 #    plt.colorbar()
 #    plt.tight_layout()
 
-    plt.subplot(121, xscale='log', yscale='log')
-    plt.plot(bins+1, E_spec_HF, '--')
-    plt.plot(bins+1, E_spec_LF)
-    plt.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
-    plt.plot([np.sqrt(2)*Ncutoff_LF + 1, np.sqrt(2)*Ncutoff_LF + 1], [10, 0], 'lightgray')
-    plt.subplot(122, xscale='log', yscale='log')
-    plt.plot(bins+1, Z_spec_HF, '--')
-    plt.plot(bins+1, Z_spec_LF)
-    plt.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
-    plt.plot([np.sqrt(2)*Ncutoff_LF + 1.5, np.sqrt(2)*Ncutoff_LF + 1.5], [10, 0], 'lightgray')
+#    plt.subplot(121, xscale='log', yscale='log')
+#    plt.plot(bins+1, E_spec_HF, '--')
+#    plt.plot(bins+1, E_spec_LF)
+#    plt.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
+#    plt.plot([np.sqrt(2)*Ncutoff_LF + 1, np.sqrt(2)*Ncutoff_LF + 1], [10, 0], 'lightgray')
+#    plt.subplot(122, xscale='log', yscale='log')
+#    plt.plot(bins+1, Z_spec_HF, '--')
+#    plt.plot(bins+1, Z_spec_LF)
+#    plt.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
+#    plt.plot([np.sqrt(2)*Ncutoff_LF + 1.5, np.sqrt(2)*Ncutoff_LF + 1.5], [10, 0], 'lightgray')
 
-#    plt.subplot(131, title=r'$E$', xlabel=r'$t\;[day]$')
-#    plt.plot(np.array(T)/day, E_HF, 'o')
-#    plt.plot(np.array(T)/day, E_LF)
-#
-#    plt.subplot(132, title=r'$Z$', xlabel=r'$t\;[day]$')
-#    plt.plot(np.array(T)/day, Z_HF, 'o')
-#    plt.plot(np.array(T)/day, Z_LF)
-#    
+    plt.subplot(121, title=r'$E$', xlabel=r'$t\;[day]$')
+    plt.plot(np.array(T)/day, E_HF, 'o')
+    plt.plot(np.array(T)/day, E_LF)
+
+    plt.subplot(122, title=r'$Z$', xlabel=r'$t\;[day]$')
+    plt.plot(np.array(T)/day, Z_HF, 'o')
+    plt.plot(np.array(T)/day, Z_LF)
+    
 #    plt.subplot(133, title=r'$W3$', xlabel=r'$t\;[day]$')
 #    plt.plot(np.array(T)/day, W3_HF, 'o')
 #    plt.plot(np.array(T)/day, W3_LF)
@@ -462,7 +462,7 @@ k_max = Ncutoff_LF
 
 P_k = get_P_k(k_min, k_max)
 
-#P_k = P_LF
+P_k = P_LF
 
 #map from the rfft2 coefficient indices to fft2 coefficient indices
 #Use: see compute_E_Z subroutine
@@ -487,7 +487,7 @@ mu = 1.0/(day*decay_time_mu)
 
 #start, end time, end time of data (training period), time step
 dt = 0.01
-t = 250.0*day
+t = 0.0*day
 t_end = t + 10*365*day
 n_steps = np.int(np.round((t_end-t)/dt))
 
@@ -506,9 +506,9 @@ S = np.floor(n_steps/store_frame_rate).astype('int')
 
 #Manual specification of flags 
 state_store = True      #store the state at the end
-restart = True         #restart from prev state
-store = True            #store data
-plot = False            #plot results while running, requires drawnow package
+restart = False         #restart from prev state
+store = True           #store data
+plot = True            #plot results while running, requires drawnow package
 compute_ref = True      #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
 
 eddy_forcing_type = 'tau_ortho'  
