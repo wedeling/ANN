@@ -465,7 +465,7 @@ mu = 1.0/(day*decay_time_mu)
 
 #start, end time, end time of data (training period), time step
 dt = 0.01
-t = 0.0*day
+t = 250.0*day
 t_end = t + 10*365*day
 n_steps = np.int(np.round((t_end-t)/dt))
 
@@ -583,12 +583,12 @@ for n in range(n_steps):
         #exact eddy forcing
         EF_hat_nm1_exact = P_LF*VgradW_hat_nm1_HF - VgradW_hat_nm1_LF 
  
-        e_n_HF, w1_n_HF, z_n_HF, w3_n_HF = get_qoi(P_k*w_hat_n_HF)
+        e_n_HF, w1_n_HF, z_n_HF, w3_n_HF = get_qoi(P_i[0]*w_hat_n_HF)
         
     #######################################
     # covariates (conditioning variables) #
     #######################################
-    e_n_LF, w1_n_LF, z_n_LF, w3_n_LF = get_qoi(P_k*w_hat_n_LF)
+    e_n_LF, w1_n_LF, z_n_LF, w3_n_LF = get_qoi(P_i[0]*w_hat_n_LF)
    
     #exact orthogonal pattern surrogate
     if eddy_forcing_type == 'tau_ortho':
@@ -597,8 +597,8 @@ for n in range(n_steps):
         w_hat_n_LF_squared = P_LF*np.fft.rfft2(w_n_LF**2)
         
         V_hat = np.zeros([N_Q, N, int(N/2+1)]) + 0.0j
-        V_hat[0] = eval(V[0])
-        V_hat[1] = eval(V[1])
+        V_hat[0] = P_i[0]*eval(V[0])
+        V_hat[1] = P_i[0]*eval(V[1])
            
 #        V_hat[0] = -psi_hat_n_LF
 #        V_hat[1] = w_hat_n_LF
