@@ -213,24 +213,28 @@ def compute_cij(T_hat, V_hat):
 # END REDUCED SUBROUTINES #
 ###########################
 
-def get_qoi(w_hat_n):
+def get_qoi(w_hat_n, target):
 
-    psi_hat_n = w_hat_n/k_squared_no_zero
-    psi_hat_n[0,0] = 0.0
-    psi_n = np.fft.irfft2(psi_hat_n)
     w_n = np.fft.irfft2(w_hat_n)
     
-    e_n = -0.5*psi_n*w_n
-    z_n = 0.5*w_n**2
-    w3_n = w_n**3/3.0 
-
-    E = simps(simps(e_n, axis), axis)/(2*np.pi)**2
-    W1 = simps(simps(w_n, axis), axis)/(2*np.pi)**2
-    Z = simps(simps(z_n, axis), axis)/(2*np.pi)**2
-    W3 = simps(simps(w3_n, axis), axis)/(2*np.pi)**2
-
-    return E, W1, Z, W3
-
+    if target == 'dE':
+        psi_hat_n = w_hat_n/k_squared_no_zero
+        psi_hat_n[0,0] = 0.0
+        psi_n = np.fft.irfft2(psi_hat_n)
+        e_n = -0.5*psi_n*w_n
+        return simps(simps(e_n, axis), axis)/(2*np.pi)**2
+    elif target == 'dZ':
+        z_n = 0.5*w_n**2
+        return simps(simps(z_n, axis), axis)/(2*np.pi)**2
+    elif target == 'dW1':
+        return simps(simps(w_n, axis), axis)/(2*np.pi)**2
+    elif target == 'dW3':
+        w3_n = w_n**3/3.0
+        return simps(simps(w3_n, axis), axis)/(2*np.pi)**2
+    else:
+        print('UNKNOWN QUANTITY OF INTEREST')
+        import sys; sys.exit()
+    
 ##compute all QoI at t_n
 #def compute_qoi(w_hat_n, verbose=True):
 #
@@ -423,19 +427,21 @@ for key in flags.keys():
 
 N_Q = int(fp.readline())
 
-dQ = []
+targets = []
 V = []
 P_i = []
 
 for i in range(N_Q):
     qoi_i = json.loads(fp.readline())
-    dQ.append(qoi_i['target'])
+    targets.append(qoi_i['target'])
     V.append(qoi_i['V_i'])
     k_min = qoi_i['k_min']
     k_max = qoi_i['k_max']
     P_i.append(get_P_k(k_min, k_max))
     
 print('*********************')
+
+dW3_calc = np.in1d('dW3', targets)
 
 #N_Q = 2
 #k_min = Ncutoff_LF - 10 
@@ -581,36 +587,27 @@ for n in range(n_steps):
         w_hat_np1_HF, VgradW_hat_n_HF = get_w_hat_np1(w_hat_n_HF, w_hat_nm1_HF, VgradW_hat_nm1_HF, P, norm_factor)
         
         #exact eddy forcing
-        EF_hat_nm1_exact = P_LF*VgradW_hat_nm1_HF - VgradW_hat_nm1_LF 
+#        EF_hat_nm1_exact = P_LF*VgradW_hat_nm1_HF - VgradW_hat_nm1_LF 
  
-        e_n_HF, w1_n_HF, z_n_HF, w3_n_HF = get_qoi(P_i[0]*w_hat_n_HF)
-        
-    #######################################
-    # covariates (conditioning variables) #
-    #######################################
-    e_n_LF, w1_n_LF, z_n_LF, w3_n_LF = get_qoi(P_i[0]*w_hat_n_LF)
+#    e_n_LF, w1_n_LF, z_n_LF, w3_n_LF = get_qoi(P_i[0]*w_hat_n_LF)
    
     #exact orthogonal pattern surrogate
     if eddy_forcing_type == 'tau_ortho':
         psi_hat_n_LF = get_psi_hat(w_hat_n_LF)
         w_n_LF = np.fft.irfft2(w_hat_n_LF)
-        w_hat_n_LF_squared = P_LF*np.fft.rfft2(w_n_LF**2)
         
+        if dW3_calc:
+            w_hat_n_LF_squared = P_LF*np.fft.rfft2(w_n_LF**2)
+
         V_hat = np.zeros([N_Q, N, int(N/2+1)]) + 0.0j
-        V_hat[0] = P_i[0]*eval(V[0])
-        V_hat[1] = P_i[0]*eval(V[1])
-           
-#        V_hat[0] = -psi_hat_n_LF
-#        V_hat[1] = w_hat_n_LF
-#        V_hat[2] = w_hat_n_LF
-#        V_hat[3] = w_hat_n_LF_squared
-        
-        dE = e_n_HF - e_n_LF
-        dW1 = w1_n_HF - w1_n_LF
-        dZ = z_n_HF - z_n_LF
-        dW3 = w3_n_HF - w3_n_LF
-        dQ = [dE, dZ]
-            
+       
+        dQ = []
+        for i in range(N_Q):
+            V_hat[i] = P_i[0]*eval(V[i])
+            Q_HF = get_qoi(P_i[i]*w_hat_n_HF, targets[i])
+            Q_LF = get_qoi(P_i[i]*w_hat_n_LF, targets[i])
+            dQ.append(Q_HF - Q_LF)
+
         EF_hat = reduced_r(V_hat, dQ)        
 
     #unparameterized solution
@@ -635,36 +632,27 @@ for n in range(n_steps):
     if j == plot_frame_rate and plot == True:
         j = 0
 
-        _e_n_HF, _w1_n_HF, _z_n_HF, _w3_n_HF = get_qoi(P_LF*w_hat_n_HF)
-        _e_n_LF, _w1_n_LF, _z_n_LF, _w3_n_LF = get_qoi(w_hat_n_LF)
-        EF = np.fft.irfft2(EF_hat)
-        
-        w_n_LF = np.fft.irfft2(w_hat_n_LF)
-        w_n_HF = np.fft.irfft2(P_LF*w_hat_n_HF)
-        
-#        #convert rfft2 coefficients to fft2 coefficients
-#        w_hat_full = np.zeros([N, N]) + 0.0j
-#        w_hat_full[0:N, 0:int(N/2+1)] = w_hat_n_LF
-#        w_hat_full[map_I, map_J] = np.conjugate(w_hat_n_LF[I, J])
-#        w_hat_full *= P_full
-#        
-#        w_n_LF_full = np.fft.ifft2(w_hat_full)
+        e_n_HF = get_qoi(P_LF*w_hat_n_HF, 'dE')
+        e_n_LF = get_qoi(P_LF*w_hat_n_LF, 'dE')
+        z_n_HF = get_qoi(P_LF*w_hat_n_HF, 'dZ')
+        z_n_LF = get_qoi(P_LF*w_hat_n_LF, 'dZ')
         
         T.append(t)
-        E_LF.append(_e_n_LF); Z_LF.append(_z_n_LF)
-        E_HF.append(_e_n_HF); Z_HF.append(_z_n_HF)
-        W3_HF.append(_w3_n_HF); W3_LF.append(_w3_n_LF)
-        W1_HF.append(_w1_n_HF); W1_LF.append(_w1_n_LF)
+        E_LF.append(e_n_LF); Z_LF.append(z_n_LF)
+        E_HF.append(e_n_HF); Z_HF.append(z_n_HF)
+#        W3_HF.append(_w3_n_HF); W3_LF.append(_w3_n_LF)
+#        W1_HF.append(_w1_n_HF); W1_LF.append(_w1_n_LF)
 
-        print('e_n_HF: %.4e' % _e_n_HF, 'w1_n_HF: %.4e' % _w1_n_HF,
-              'z_n_HF: %.4e' % _z_n_HF, 'w3_n_HF: %.4e' % _w3_n_HF)
-        print('e_n_LF: %.4e' % _e_n_LF, 'w1_n_LF: %.4e' % _w1_n_LF,
-              'z_n_LF: %.4e' % _z_n_LF, 'w3_n_LF: %.4e' % _w3_n_LF)
+        print('e_n_HF: %.4e' % e_n_HF, 'z_n_HF: %.4e' % z_n_HF)
+        print('e_n_LF: %.4e' % e_n_LF, 'z_n_LF: %.4e' % z_n_LF)
+
+#        print('e_n_HF: %.4e' % _e_n_HF, 'w1_n_HF: %.4e' % _w1_n_HF,
+#              'z_n_HF: %.4e' % _z_n_HF, 'w3_n_HF: %.4e' % _w3_n_HF)
+#        print('e_n_LF: %.4e' % _e_n_LF, 'w1_n_LF: %.4e' % _w1_n_LF,
+#              'z_n_LF: %.4e' % _z_n_LF, 'w3_n_LF: %.4e' % _w3_n_LF)
         
-        E_spec_HF, Z_spec_HF = spectrum(w_hat_n_HF, P_full)
-        E_spec_LF, Z_spec_LF = spectrum(w_hat_n_LF, P_LF_full)
-        
-        #compute_qoi(w_hat_n_LF)
+#        E_spec_HF, Z_spec_HF = spectrum(w_hat_n_HF, P_full)
+#        E_spec_LF, Z_spec_LF = spectrum(w_hat_n_LF, P_LF_full)
         
         drawnow(draw)
         
@@ -672,8 +660,10 @@ for n in range(n_steps):
     if j2 == store_frame_rate and store == True:
         j2 = 0
 
-        e_n_HF, _, z_n_HF, _ = get_qoi(P_LF*w_hat_n_HF)
-        e_n_LF, _, z_n_LF, _ = get_qoi(w_hat_n_LF)
+        e_n_HF = get_qoi(P_LF*w_hat_n_HF, 'dE')
+        e_n_LF = get_qoi(P_LF*w_hat_n_LF, 'dE')
+        z_n_HF = get_qoi(P_LF*w_hat_n_HF, 'dZ')
+        z_n_LF = get_qoi(P_LF*w_hat_n_LF, 'dZ')
 
         if np.mod(n, np.round(day/dt)) == 0:
             print('n = ', n, ' of ', n_steps)
