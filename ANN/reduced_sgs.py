@@ -346,6 +346,7 @@ from scipy.integrate import simps
 import sys
 from drawnow import drawnow
 from scipy import stats
+import json
 
 plt.close('all')
 plt.rcParams['image.cmap'] = 'seismic'
@@ -401,15 +402,45 @@ P_U = P - P_LF
 P_full = get_P_full(Ncutoff)
 P_LF_full = get_P_full(Ncutoff_LF)
 
+#read flags from input file
+fpath = sys.argv[1]
+fp = open(fpath, 'r')
+
 binnumbers, bins = freq_map()
 N_bins = bins.size
 
-N_Q = 2
-k_min = Ncutoff_LF - 10 
-k_max = Ncutoff_LF
+###################
+# Read input file #
+###################
+flags = json.loads(fp.readline())
+print('*********************')
+print('Simulation flags')
+print('*********************')
+
+for key in flags.keys():
+    vars()[key] = flags[key]
+    print(key, '=', flags[key])
+
+N_Q = int(fp.readline())
+
+dQ = []
+V = []
+P_i = []
+
+for i in range(N_Q):
+    qoi_i = json.loads(fp.readline())
+    dQ.append(qoi_i['target'])
+    V.append(qoi_i['V_i'])
+    k_min = qoi_i['k_min']
+    k_max = qoi_i['k_max']
+    P_i.append(get_P_k(k_min, k_max))
+    
+print('*********************')
+
+#N_Q = 2
+#k_min = Ncutoff_LF - 10 
+#k_max = Ncutoff_LF
 #k_max = np.max(P_LF_full*binnumbers)
-P_k = get_P_k(k_min, k_max)
-P_k = P_LF
 
 #map from the rfft2 coefficient indices to fft2 coefficient indices
 #Use: see compute_E_Z subroutine
@@ -442,8 +473,6 @@ n_steps = np.int(np.round((t_end-t)/dt))
 # USER KEYS #
 #############
 
-#simulation name
-sim_ID = 'foo'
 #framerate of storing data, plotting results, computing correlations (1 = every integration time step)
 store_frame_rate = np.floor(1.0*day/dt).astype('int')
 #store_frame_rate = 1
@@ -451,16 +480,17 @@ plot_frame_rate = np.floor(1.0*day/dt).astype('int')
 #length of data array
 S = np.floor(n_steps/store_frame_rate).astype('int')
 
-#Manual specification of flags 
-state_store = True      #store the state at the end
-restart = False         #restart from prev state
-store = False           #store data
-plot = True             #plot results while running, requires drawnow package
-compute_ref = True      #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
-
-eddy_forcing_type = 'tau_ortho'  
-
-store_ID = sim_ID 
+##Manual specification of flags 
+#state_store = True      #store the state at the end
+#restart = False         #restart from prev state
+#store = False           #store data
+#plot = True             #plot results while running, requires drawnow package
+#compute_ref = True      #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
+#
+#eddy_forcing_type = 'tau_ortho'  
+#simulation name
+#sim_ID = 'foo'
+#store_ID = sim_ID 
     
 ###############################
 # SPECIFY WHICH DATA TO STORE #
@@ -567,8 +597,11 @@ for n in range(n_steps):
         w_hat_n_LF_squared = P_LF*np.fft.rfft2(w_n_LF**2)
         
         V_hat = np.zeros([N_Q, N, int(N/2+1)]) + 0.0j
-        V_hat[0] = -psi_hat_n_LF
-        V_hat[1] = w_hat_n_LF
+        V_hat[0] = eval(V[0])
+        V_hat[1] = eval(V[1])
+           
+#        V_hat[0] = -psi_hat_n_LF
+#        V_hat[1] = w_hat_n_LF
 #        V_hat[2] = w_hat_n_LF
 #        V_hat[3] = w_hat_n_LF_squared
         

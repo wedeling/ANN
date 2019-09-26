@@ -14,7 +14,7 @@ target = ['dE', 'dZ']
 V = ["-psi_hat_n_LF", "w_hat_n_LF"]
 
 #spectral filter properties per target
-k_min = [0, 0]
+k_min = [0, 15]
 k_max = [21, 21]
 
 #number of surrogates to be constructed
@@ -31,7 +31,7 @@ fp = open(fpath, 'a')
 
 #simulation flags
 flags = {}
-flags['input_file'] = input_file
+flags['sim_ID'] = input_file
 flags['state_store'] = False                #store the state at the end of the simulation
 flags['restart'] = True                     #restart from previously stored state
 flags['store'] = True                       #store data
