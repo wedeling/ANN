@@ -91,21 +91,30 @@ def draw():
 #    plt.contourf(x, y, EF, 100)
 #    plt.colorbar()
 #    plt.tight_layout()
+
     plt.subplot(121, xscale='log', yscale='log')
-    plt.plot(bins+1.5, E_spec_HF, '--')
-    plt.plot(bins+1.5, E_spec_LF, '--')
-    plt.plot([Ncutoff_LF + 1.5, Ncutoff_LF + 1.5], [10, 0], 'lightgray')
-    plt.plot([np.sqrt(2)*Ncutoff_LF + 1.5, np.sqrt(2)*Ncutoff_LF + 1.5], [10, 0], 'lightgray')
+    plt.plot(bins+1, E_spec_HF, '--')
+    plt.plot(bins+1, E_spec_LF)
+    plt.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
+    plt.plot([np.sqrt(2)*Ncutoff_LF + 1, np.sqrt(2)*Ncutoff_LF + 1], [10, 0], 'lightgray')
     plt.subplot(122, xscale='log', yscale='log')
-    plt.plot(bins+1.5, Z_spec_HF, '--')
-    plt.plot(bins+1.5, Z_spec_LF, '--')
-    plt.plot([Ncutoff_LF + 1.5, Ncutoff_LF + 1.5], [10, 0], 'lightgray')
+    plt.plot(bins+1, Z_spec_HF, '--')
+    plt.plot(bins+1, Z_spec_LF)
+    plt.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
     plt.plot([np.sqrt(2)*Ncutoff_LF + 1.5, np.sqrt(2)*Ncutoff_LF + 1.5], [10, 0], 'lightgray')
-    
+
+#    plt.subplot(131, title=r'$E$', xlabel=r'$t\;[day]$')
+#    plt.plot(np.array(T)/day, E_HF, 'o')
+#    plt.plot(np.array(T)/day, E_LF)
+#
+#    plt.subplot(132, title=r'$Z$', xlabel=r'$t\;[day]$')
+#    plt.plot(np.array(T)/day, Z_HF, 'o')
 #    plt.plot(np.array(T)/day, Z_LF)
+#    
 #    plt.subplot(133, title=r'$W3$', xlabel=r'$t\;[day]$')
 #    plt.plot(np.array(T)/day, W3_HF, 'o')
 #    plt.plot(np.array(T)/day, W3_LF)
+#    
 #    plt.subplot(133, title=r'$\tau$', xlabel=r'$t\;[day]$')
 #    plt.plot(np.array(T)/day, TAU1)
 #    plt.plot(np.array(T)/day, TAU2)
@@ -438,7 +447,6 @@ P_U = P - P_LF
 P_full = get_P_full(Ncutoff)
 P_LF_full = get_P_full(Ncutoff_LF)
 
-
 binnumbers, bins = freq_map()
 N_bins = bins.size
 
@@ -459,14 +467,14 @@ day = 24*60**2*Omega
 decay_time_nu = 5.0
 decay_time_mu = 90.0
 nu = 1.0/(day*Ncutoff**2*decay_time_nu)
-nu_LF = 1.0/(day*Ncutoff_LF**2*decay_time_nu)
+nu_LF = 1.0/(day*Ncutoff**2*decay_time_nu)
 
 mu = 1.0/(day*decay_time_mu)
 
 #start, end time, end time of data (training period), time step
 dt = 0.01
 t = 250.0*day
-t_end = t + 250*day
+t_end = t + 10*365*day
 n_steps = np.int(np.round((t_end-t)/dt))
 
 #############
@@ -474,7 +482,7 @@ n_steps = np.int(np.round((t_end-t)/dt))
 #############
 
 #simulation name
-sim_ID = 'gen_tau'
+sim_ID = 'gen_tau_equal_nu'
 #framerate of storing data, plotting results, computing correlations (1 = every integration time step)
 store_frame_rate = np.floor(5.0*day/dt).astype('int')
 #store_frame_rate = 1
@@ -483,22 +491,23 @@ plot_frame_rate = np.floor(1.0*day/dt).astype('int')
 S = np.floor(n_steps/store_frame_rate).astype('int')
 
 #Manual specification of flags 
-state_store = False     #store the state at the end
+state_store = True     #store the state at the end
 restart = True          #restart from prev state
-store = False            #store data
-plot = True            #plot results while running, requires drawnow package
+store = True            #store data
+plot = False            #plot results while running, requires drawnow package
 compute_ref = True      #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
 
-eddy_forcing_type = 'unparam'  
+eddy_forcing_type = 'tau_ortho'  
 
-store_ID = sim_ID + '_spectrum'
+store_ID = sim_ID
     
 ###############################
 # SPECIFY WHICH DATA TO STORE #
 ###############################
 
 #TRAINING DATA SET
-#QoI = ['z_n_HF', 'e_n_HF', 'w3_n_HF', 
+#QoI = ['w_hat_n_LF', 'w_hat_n_HF',
+#       'z_n_HF', 'e_n_HF', 'w3_n_HF', 
 #       'z_n_LF', 'e_n_LF', 'w3_n_LF', 
 #       'src1', 'src2', 'src3',
 #       'c_12', 'c_13', 'c_22', 'c_23', 'c_32', 'c_33',
@@ -743,7 +752,7 @@ for n in range(n_steps):
         print('e_n_HF: %.4e' % e_n_HF, 'w1_n_HF: %.4e' % w1_n_HF, 'z_n_HF: %.4e' % z_n_HF, 'w3_n_HF: %.4e' % w3_n_HF)
         print('e_n_LF: %.4e' % e_n_LF, 'w1_n_LF: %.4e' % w1_n_LF, 'z_n_LF: %.4e' % z_n_LF, 'w3_n_LF: %.4e' % w3_n_LF)
         
-        E_spec_HF, Z_spec_HF = spectrum(w_hat_n_HF, P_LF_full)
+        E_spec_HF, Z_spec_HF = spectrum(w_hat_n_HF, P_full)
         E_spec_LF, Z_spec_LF = spectrum(w_hat_n_LF, P_LF_full)
         
         #compute_qoi(w_hat_n_LF)
