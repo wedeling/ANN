@@ -101,11 +101,11 @@ def draw():
 #    plt.colorbar()
 #    plt.tight_layout()
 
-#    plt.subplot(121, xscale='log', yscale='log')
-#    plt.plot(bins+1, E_spec_HF, '--')
-#    plt.plot(bins+1, E_spec_LF)
-#    plt.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
-#    plt.plot([np.sqrt(2)*Ncutoff_LF + 1, np.sqrt(2)*Ncutoff_LF + 1], [10, 0], 'lightgray')
+    plt.subplot(122, xscale='log', yscale='log')
+    plt.plot(bins+1, E_spec_HF, '--')
+    plt.plot(bins+1, E_spec_LF)
+    plt.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
+    plt.plot([np.sqrt(2)*Ncutoff_LF + 1, np.sqrt(2)*Ncutoff_LF + 1], [10, 0], 'lightgray')
 #    plt.subplot(122, xscale='log', yscale='log')
 #    plt.plot(bins+1, Z_spec_HF, '--')
 #    plt.plot(bins+1, Z_spec_LF)
@@ -116,9 +116,9 @@ def draw():
     plt.plot(np.array(T)/day, E_HF, 'o')
     plt.plot(np.array(T)/day, E_LF)
 
-    plt.subplot(122, title=r'$Z$', xlabel=r'$t\;[day]$')
-    plt.plot(np.array(T)/day, Z_HF, 'o')
-    plt.plot(np.array(T)/day, Z_LF)
+#    plt.subplot(122, title=r'$Z$', xlabel=r'$t\;[day]$')
+#    plt.plot(np.array(T)/day, Z_HF, 'o')
+#    plt.plot(np.array(T)/day, Z_LF)
 #    
 #    plt.subplot(133, title=r'$W3$', xlabel=r'$t\;[day]$')
 #    plt.plot(np.array(T)/day, W3_HF, 'o')
@@ -471,7 +471,7 @@ mu = 1.0/(day*decay_time_mu)
 
 #start, end time, end time of data (training period), time step
 dt = 0.01
-t = 250.0*day
+t = 0.0*day
 t_end = t + 10*365*day
 n_steps = np.int(np.round((t_end-t)/dt))
 
@@ -496,7 +496,7 @@ S = np.floor(n_steps/store_frame_rate).astype('int')
 #eddy_forcing_type = 'tau_ortho'  
 #simulation name
 #sim_ID = 'foo'
-#store_ID = sim_ID 
+store_ID = sim_ID 
     
 ###############################
 # SPECIFY WHICH DATA TO STORE #
@@ -603,7 +603,7 @@ for n in range(n_steps):
        
         dQ = []
         for i in range(N_Q):
-            V_hat[i] = P_i[0]*eval(V[i])
+            V_hat[i] = P_i[i]*eval(V[i])
             Q_HF = get_qoi(P_i[i]*w_hat_n_HF, targets[i])
             Q_LF = get_qoi(P_i[i]*w_hat_n_LF, targets[i])
             dQ.append(Q_HF - Q_LF)
@@ -651,8 +651,8 @@ for n in range(n_steps):
 #        print('e_n_LF: %.4e' % _e_n_LF, 'w1_n_LF: %.4e' % _w1_n_LF,
 #              'z_n_LF: %.4e' % _z_n_LF, 'w3_n_LF: %.4e' % _w3_n_LF)
         
-#        E_spec_HF, Z_spec_HF = spectrum(w_hat_n_HF, P_full)
-#        E_spec_LF, Z_spec_LF = spectrum(w_hat_n_LF, P_LF_full)
+        E_spec_HF, Z_spec_HF = spectrum(w_hat_n_HF, P_full)
+        E_spec_LF, Z_spec_LF = spectrum(w_hat_n_LF, P_LF_full)
         
         drawnow(draw)
         

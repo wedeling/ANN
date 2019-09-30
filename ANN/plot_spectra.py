@@ -71,6 +71,45 @@ def draw():
     plt.plot([np.sqrt(2)*Ncutoff_LF + 1, np.sqrt(2)*Ncutoff_LF + 1], [10, 0], 'lightgray')
 
     plt.tight_layout()
+    
+def draw2():
+    plt.figure(figsize=[4,4])
+    plt.subplot(111, xscale='log', yscale='log', title=r'energy', xlabel=r'$k$')
+    plt.plot(bins+1e-8, mean_E_spec_HF, '--', label = r'$\mathrm{reference}$')
+    plt.plot(bins+1e-8, mean_E_spec_LF, label=r'$\mathrm{reduced}$')
+    plt.plot(bins+1e-8, mean_E_spec_UN, ':', label=r'$\mathrm{eddy\;visc.}$')
+    plt.legend(loc=0)
+
+    ax = plt.gca()
+    axins = zoomed_inset_axes(ax, 3, loc=3)
+    axins.plot(bins+1e-8, mean_E_spec_HF, '--')
+    axins.plot(bins+1e-8, mean_E_spec_LF)
+    axins.plot(bins+1e-8, mean_E_spec_UN, ':')
+
+    ax.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
+    ax.plot([np.sqrt(2)*Ncutoff_LF + 1, np.sqrt(2)*Ncutoff_LF + 1], [10, 0], 'lightgray')
+
+    # sub region of the original image
+    # K <= k <= ceil(sqrt(2)*K)
+    #x1, x2, y1, y2 = 20, 33, 10**-8, 2*10**-7
+    # K - 5 <= k <= K
+    x1, x2, y1, y2 = 15, 22, 5*10**-8, 5*10**-7
+    axins.set_xscale('log')
+    axins.set_yscale('log')
+    axins.set_xlim(x1, x2)
+    axins.set_ylim(y1, y2)
+  
+    axins.set_xticks([])
+    axins.set_yticks([])
+   
+    # draw a bbox of the region of the inset axes in the parent axes and
+    # connecting lines between the bbox and the inset axes area
+    mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="0.5")
+
+    plt.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
+    plt.plot([np.sqrt(2)*Ncutoff_LF + 1, np.sqrt(2)*Ncutoff_LF + 1], [10, 0], 'lightgray')
+
+    plt.tight_layout()
 
 #compute spectral filter
 def get_P(cutoff):
@@ -252,8 +291,8 @@ I, J = np.meshgrid(I, J)
 
 Omega = 7.292*10**-5
 day = 24*60**2*Omega
-sim_ID = 'gen_tau_P_k_equal_nu_3'
-t_end = (250.0)*day 
+sim_ID = 'gen_tau_P_k_equal_nu_4'
+t_end = (10*365)*day 
 
 fname = HOME + '/samples/' + sim_ID + '_t_' + str(np.around(t_end/day,1)) + '.hdf5'
 fname_unparam = HOME + '/samples/unparam_spectrum_t_3900.0.hdf5'  
@@ -265,7 +304,6 @@ fig = plt.figure(figsize=[8,4])
 try:
     h5f = h5py.File(fname, 'r')
     print(h5f.keys())
-
     
     w_hat_n_HF = h5f['w_hat_n_HF']
     w_hat_n_LF = h5f['w_hat_n_LF']
@@ -291,7 +329,6 @@ except IOError:
     print('*****************************')
     print(fname, ' not found')
     print('*****************************')
-    
 
 try:
 
@@ -313,5 +350,5 @@ except IOError:
     print(fname_unparam, ' not found')
     print('*****************************')
 
-draw()
+draw2()
 plt.show()

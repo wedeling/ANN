@@ -5,16 +5,16 @@ import os
 HOME = os.path.abspath(os.path.dirname(__file__))
 
 #name of the generated input file
-input_file = 'gen_tau_P_k_equal_nu_3'
+input_file = 'gen_tau_P_k_equal_nu_4'
 
 #surrogate targets 
-target = ['dE', 'dZ']
+target = ['dE', 'dE']
 
 #'test' functions of targets
-V = ["-psi_hat_n_LF", "w_hat_n_LF"]
+V = ["-psi_hat_n_LF", "-psi_hat_n_LF"]
 
 #spectral filter properties per target
-k_min = [0, 0]
+k_min = [0, 16]
 k_max = [21, 21]
 
 #number of surrogates to be constructed
@@ -33,8 +33,8 @@ fp = open(fpath, 'a')
 flags = {}
 flags['sim_ID'] = input_file
 flags['state_store'] = False                #store the state at the end of the simulation
-flags['restart'] = True                     #restart from previously stored state
-flags['store'] = False                       #store data
+flags['restart'] = False                     #restart from previously stored state
+flags['store'] = True                       #store data
 flags['plot'] = True                       #plot results while running (required drawnow package)
 flags['compute_ref'] = True                 #compute the reference solution as well, leave at True, will automatically turn off in surrogate mode
 flags['eddy_forcing_type'] = 'tau_ortho'   
