@@ -34,14 +34,14 @@ HOME = os.path.abspath(os.path.dirname(__file__))
 ###########################
 Omega = 7.292*10**-5
 day = 24*60**2*Omega
-sim_ID = 'gen_tau_3track'
-t_end = (250.0 + 10*365.)*day 
-burn = 0#np.int(365*day)
+sim_ID = 'gen_tau_P_k_equal_nu_4'
+t_end = (10.0*365)*day 
+burn = np.int(250*day)
 
-fig = plt.figure(figsize=[12, 4])
-ax1 = fig.add_subplot(131, xlabel=r'$E$', yticks = [])
-ax2 = fig.add_subplot(132, xlabel=r'$Z$', yticks = [])
-ax3 = fig.add_subplot(133, xlabel=r'$Z_2$', yticks = [])
+fig = plt.figure(figsize=[4, 4])
+ax1 = fig.add_subplot(111, xlabel=r'$E$', yticks = [])
+#ax2 = fig.add_subplot(122, xlabel=r'$Z$', yticks = [])
+#ax3 = fig.add_subplot(133, xlabel=r'$Z_2$', yticks = [])
 
 #fpath = sys.argv[1]
 #fp = open(fpath, 'r')
@@ -91,9 +91,6 @@ try:
     #ax1.plot(x_E_UP, pdf_E_UP, ':k', label=r'$\mathrm{unparam.}$')
     #ax2.plot(x_Z_UP, pdf_Z_UP, ':k', label=r'$\mathrm{unparam.}$')
 
-#    ax1.hist([h5f['e_n_LF'][burn:], h5f['e_n_HF'][burn:]], 20, label=[r'$\mathrm{reduced}$', r'$\mathrm{reference}$'])
-#    ax2.hist([h5f['z_n_LF'][burn:], h5f['z_n_HF'][burn:]], 20, label=[r'$\mathrm{reduced}$', r'$\mathrm{reference}$'])
-
     ax1.legend(loc=0)
    
     plt.tight_layout()
@@ -113,10 +110,22 @@ except IOError:
     print(fname, ' not found')
     print('*****************************')
 
+plt.tight_layout()
+#
+#fig = plt.figure(figsize=[8,4])
+#t = h5f_unparam['t'][:]
+#plt.subplot(121, title=r'$\Delta E$', xlabel=r'$t\;\mathrm{[days]}$')
+#plt.plot(t/day, h5f['dE'])
+#plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+#plt.subplot(122, title=r'$\Delta Z$', xlabel=r'$t\;\mathrm{[days]}$')
+#plt.plot(t/day, h5f['dZ'])
+#plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+#plt.tight_layout()
+#
 ax1.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-ax2.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-ax3.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-
-fig.tight_layout()
-
+#ax2.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+##ax3.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+#
+#fig.tight_layout()
+#
 plt.show()

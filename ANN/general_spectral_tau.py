@@ -51,10 +51,7 @@ def get_P(cutoff):
                 
     return P
 
-def get_P_k():
-    
-    k_min = Ncutoff_LF
-    k_max = np.max(P_LF_full*binnumbers)
+def get_P_k(k_min, k_max):
     
     P_k = np.zeros([N, N])    
     idx0, idx1 = np.where((binnumbers >= k_min) & (binnumbers <= k_max))
@@ -104,25 +101,25 @@ def draw():
 #    plt.colorbar()
 #    plt.tight_layout()
 
-    plt.subplot(121, xscale='log', yscale='log')
-    plt.plot(bins+1, E_spec_HF, '--')
-    plt.plot(bins+1, E_spec_LF)
-    plt.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
-    plt.plot([np.sqrt(2)*Ncutoff_LF + 1, np.sqrt(2)*Ncutoff_LF + 1], [10, 0], 'lightgray')
-    plt.subplot(122, xscale='log', yscale='log')
-    plt.plot(bins+1, Z_spec_HF, '--')
-    plt.plot(bins+1, Z_spec_LF)
-    plt.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
-    plt.plot([np.sqrt(2)*Ncutoff_LF + 1.5, np.sqrt(2)*Ncutoff_LF + 1.5], [10, 0], 'lightgray')
+#    plt.subplot(121, xscale='log', yscale='log')
+#    plt.plot(bins+1, E_spec_HF, '--')
+#    plt.plot(bins+1, E_spec_LF)
+#    plt.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
+#    plt.plot([np.sqrt(2)*Ncutoff_LF + 1, np.sqrt(2)*Ncutoff_LF + 1], [10, 0], 'lightgray')
+#    plt.subplot(122, xscale='log', yscale='log')
+#    plt.plot(bins+1, Z_spec_HF, '--')
+#    plt.plot(bins+1, Z_spec_LF)
+#    plt.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
+#    plt.plot([np.sqrt(2)*Ncutoff_LF + 1.5, np.sqrt(2)*Ncutoff_LF + 1.5], [10, 0], 'lightgray')
 
-#    plt.subplot(131, title=r'$E$', xlabel=r'$t\;[day]$')
-#    plt.plot(np.array(T)/day, E_HF, 'o')
-#    plt.plot(np.array(T)/day, E_LF)
-#
-#    plt.subplot(132, title=r'$Z$', xlabel=r'$t\;[day]$')
-#    plt.plot(np.array(T)/day, Z_HF, 'o')
-#    plt.plot(np.array(T)/day, Z_LF)
-#    
+    plt.subplot(121, title=r'$E$', xlabel=r'$t\;[day]$')
+    plt.plot(np.array(T)/day, E_HF, 'o')
+    plt.plot(np.array(T)/day, E_LF)
+
+    plt.subplot(122, title=r'$Z$', xlabel=r'$t\;[day]$')
+    plt.plot(np.array(T)/day, Z_HF, 'o')
+    plt.plot(np.array(T)/day, Z_LF)
+    
 #    plt.subplot(133, title=r'$W3$', xlabel=r'$t\;[day]$')
 #    plt.plot(np.array(T)/day, W3_HF, 'o')
 #    plt.plot(np.array(T)/day, W3_LF)
@@ -458,8 +455,14 @@ P_LF_full = get_P_full(Ncutoff_LF)
 
 binnumbers, bins = freq_map()
 N_bins = bins.size
-P_k = get_P_k()
-#P_k = P_LF
+
+k_min = Ncutoff_LF - 10 
+k_max = Ncutoff_LF
+#k_max = np.max(P_LF_full*binnumbers)
+
+P_k = get_P_k(k_min, k_max)
+
+P_k = P_LF
 
 #map from the rfft2 coefficient indices to fft2 coefficient indices
 #Use: see compute_E_Z subroutine
@@ -485,7 +488,7 @@ mu = 1.0/(day*decay_time_mu)
 #start, end time, end time of data (training period), time step
 dt = 0.01
 t = 0.0*day
-t_end = t + 250*day
+t_end = t + 10*365*day
 n_steps = np.int(np.round((t_end-t)/dt))
 
 #############
@@ -493,18 +496,18 @@ n_steps = np.int(np.round((t_end-t)/dt))
 #############
 
 #simulation name
-sim_ID = 'gen_tau_P_k'
+sim_ID = 'gen_tau_P_k_equal_nu_3'
 #framerate of storing data, plotting results, computing correlations (1 = every integration time step)
-store_frame_rate = np.floor(5.0*day/dt).astype('int')
+store_frame_rate = np.floor(1.0*day/dt).astype('int')
 #store_frame_rate = 1
 plot_frame_rate = np.floor(1.0*day/dt).astype('int')
 #length of data array
 S = np.floor(n_steps/store_frame_rate).astype('int')
 
 #Manual specification of flags 
-state_store = True     #store the state at the end
+state_store = True      #store the state at the end
 restart = False         #restart from prev state
-store = False            #store data
+store = True           #store data
 plot = True            #plot results while running, requires drawnow package
 compute_ref = True      #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
 
@@ -524,7 +527,7 @@ store_ID = sim_ID
 #       'tau_1', 'tau_2', 'tau_3',
 #       'dE', 'dZ', 'dW3']
 
-QoI = ['w_hat_n_LF', 'w_hat_n_HF']
+QoI = ['w_hat_n_LF', 'w_hat_n_HF', 'z_n_HF', 'e_n_HF', 'z_n_LF', 'e_n_LF']
 
 #PREDICTION DATA SET
 #QoI = ['z_n_LF', 'e_n_LF', 'w3_n_LF', 't']
@@ -597,14 +600,15 @@ W1_HF = []; W1_LF = []
 TAU1 = []; TAU2 = []; TAU3 = []
 TEST = []
 
-fig = plt.figure(figsize=[8, 4])
+if plot == True:
+    fig = plt.figure(figsize=[8, 4])
 
 #time loop
 for n in range(n_steps):
     
     #orthogonal patterns
-    psi_hat_n_prime = get_psi_hat_prime(w_hat_n_LF)
-    w_hat_n_prime = get_w_hat_prime(w_hat_n_LF)
+    #psi_hat_n_prime = get_psi_hat_prime(w_hat_n_LF)
+    #w_hat_n_prime = get_w_hat_prime(w_hat_n_LF)
 
     if compute_ref == True:
         
@@ -615,10 +619,10 @@ for n in range(n_steps):
         EF_hat_nm1_exact = P_LF*VgradW_hat_nm1_HF - VgradW_hat_nm1_LF 
  
         #exact tau_E and tau_Z
-        tau_E, tau_Z, dE, dZ = get_data_driven_tau_src_EZ(w_hat_n_LF, w_hat_n_HF, P_LF, 1.0, 1.0)
+        #tau_E, tau_Z, dE, dZ = get_data_driven_tau_src_EZ(w_hat_n_LF, w_hat_n_HF, P_LF, 1.0, 1.0)
     
         #E & Z tracking eddy forcing
-        EF_hat_n_ortho = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime 
+        #EF_hat_n_ortho = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime 
 
         #reference energy and enstrophy
         #e_np1_HF, z_np1_HF, _ = get_EZS(P_LF*w_hat_np1_HF)
@@ -774,7 +778,10 @@ for n in range(n_steps):
     #store samples to dict
     if j2 == store_frame_rate and store == True:
         j2 = 0
-        
+
+        e_n_HF, _, z_n_HF, _ = get_EZS(P_LF*w_hat_n_HF)
+        e_n_LF, _, z_n_LF, _ = get_EZS(w_hat_n_LF)
+
         if np.mod(n, np.round(day/dt)) == 0:
             print('n = ', n, ' of ', n_steps)
 

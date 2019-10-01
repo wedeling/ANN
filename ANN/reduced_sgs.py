@@ -51,6 +51,15 @@ def get_P(cutoff):
                 
     return P
 
+def get_P_k(k_min, k_max):
+    
+    P_k = np.zeros([N, N])    
+    idx0, idx1 = np.where((binnumbers >= k_min) & (binnumbers <= k_max))
+    
+    P_k[idx0, idx1] = 1.0
+    
+    return P_k[0:N, 0:int(N/2+1)] 
+
 #compute spectral filter
 def get_P_full(cutoff):
 
@@ -91,30 +100,30 @@ def draw():
 #    plt.contourf(x, y, EF, 100)
 #    plt.colorbar()
 #    plt.tight_layout()
-#    plt.subplot(121, xscale='log', yscale='log')
-#    plt.plot(bins+1.5, E_spec_HF, '--')
-#    plt.plot(bins+1.5, E_spec_LF, '--')
-#    plt.plot([Ncutoff_LF + 1.5, Ncutoff_LF + 1.5], [10, 0], 'lightgray')
-#    plt.plot([np.sqrt(2)*Ncutoff_LF + 1.5, np.sqrt(2)*Ncutoff_LF + 1.5], [10, 0], 'lightgray')
+
+    plt.subplot(122, xscale='log', yscale='log')
+    plt.plot(bins+1, E_spec_HF, '--')
+    plt.plot(bins+1, E_spec_LF)
+    plt.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
+    plt.plot([np.sqrt(2)*Ncutoff_LF + 1, np.sqrt(2)*Ncutoff_LF + 1], [10, 0], 'lightgray')
 #    plt.subplot(122, xscale='log', yscale='log')
-#    plt.plot(bins+1.5, Z_spec_HF, '--')
-#    plt.plot(bins+1.5, Z_spec_LF, '--')
-#    plt.plot([Ncutoff_LF + 1.5, Ncutoff_LF + 1.5], [10, 0], 'lightgray')
+#    plt.plot(bins+1, Z_spec_HF, '--')
+#    plt.plot(bins+1, Z_spec_LF)
+#    plt.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
 #    plt.plot([np.sqrt(2)*Ncutoff_LF + 1.5, np.sqrt(2)*Ncutoff_LF + 1.5], [10, 0], 'lightgray')
-    
-#    plt.plot(np.array(T)/day, Z_LF)
-    plt.subplot(221, title=r'$E$', xlabel=r'$t\;[day]$')
+
+    plt.subplot(121, title=r'$E$', xlabel=r'$t\;[day]$')
     plt.plot(np.array(T)/day, E_HF, 'o')
     plt.plot(np.array(T)/day, E_LF)
-    plt.subplot(222, title=r'$Z_0$', xlabel=r'$t\;[day]$')
-    plt.plot(np.array(T)/day, W1_HF, 'o')
-    plt.plot(np.array(T)/day, W1_LF)
-    plt.subplot(223, title=r'$Z_1$', xlabel=r'$t\;[day]$')
-    plt.plot(np.array(T)/day, Z_HF, 'o')
-    plt.plot(np.array(T)/day, Z_LF)
-    plt.subplot(224, title=r'$Z_2$', xlabel=r'$t\;[day]$')
-    plt.plot(np.array(T)/day, W3_HF, 'o')
-    plt.plot(np.array(T)/day, W3_LF)
+
+#    plt.subplot(122, title=r'$Z$', xlabel=r'$t\;[day]$')
+#    plt.plot(np.array(T)/day, Z_HF, 'o')
+#    plt.plot(np.array(T)/day, Z_LF)
+#    
+#    plt.subplot(133, title=r'$W3$', xlabel=r'$t\;[day]$')
+#    plt.plot(np.array(T)/day, W3_HF, 'o')
+#    plt.plot(np.array(T)/day, W3_LF)
+#    
 #    plt.subplot(133, title=r'$\tau$', xlabel=r'$t\;[day]$')
 #    plt.plot(np.array(T)/day, TAU1)
 #    plt.plot(np.array(T)/day, TAU2)
@@ -135,6 +144,7 @@ def get_psi_hat(w_hat_n):
     psi_hat_n[0,0] = 0.0
 
     return psi_hat_n
+
 
 #######################
 # REDUCED SUBROUTINES #
@@ -199,115 +209,65 @@ def compute_cij(T_hat, V_hat):
             
     return c_ij
 
-def get_data_driven_tau_src_EZ(w_hat_n_LF, w_hat_n_HF, P, tau_max_E, tau_max_Z):
-    
-    E_LF, W1_HF, Z_LF, S_LF = get_EZS(w_hat_n_LF)
+###########################
+# END REDUCED SUBROUTINES #
+###########################
 
-    src_E = E_LF**2/Z_LF - S_LF
-    src_Z = -E_LF**2/S_LF + Z_LF
+def get_qoi(w_hat_n, target):
 
-    E_HF = compute_E(P*w_hat_n_HF)
-    Z_HF = compute_Z(P*w_hat_n_HF)
-
-    dE = (E_HF - E_LF)#/E_LF
-    dZ = (Z_HF - Z_LF)#/Z_LF
-
-    tau_E = tau_max_E*np.tanh(dE/E_LF)*np.sign(src_E)
-    tau_Z = tau_max_Z*np.tanh(dZ/Z_LF)*np.sign(src_Z)
-    
-    return tau_E, tau_Z, dE, dZ
-
-def get_surrogate_tau_src_EZ(w_hat_n_LF, r, tau_max_E, tau_max_Z):
-    
-    E_LF, Z_LF, S_LF = get_EZS(w_hat_n_LF)
-
-    src_E = E_LF**2/Z_LF - S_LF
-    src_Z = -E_LF**2/S_LF + Z_LF
-
-    dE = r[0] 
-    dZ = r[1]
-
-    tau_E = tau_max_E*np.tanh(dE/E_LF)*np.sign(src_E)
-    tau_Z = tau_max_Z*np.tanh(dZ/Z_LF)*np.sign(src_Z)
-    
-    return tau_E, tau_Z
-
-def get_EZS(w_hat_n):
-
-    psi_hat_n = w_hat_n/k_squared_no_zero
-    psi_hat_n[0,0] = 0.0
-    psi_n = np.fft.irfft2(psi_hat_n)
     w_n = np.fft.irfft2(w_hat_n)
     
-    e_n = -0.5*psi_n*w_n
-    z_n = 0.5*w_n**2
-    w3_n = w_n**3/3.0 
-
-    E = simps(simps(e_n, axis), axis)/(2*np.pi)**2
-    W1 = simps(simps(w_n, axis), axis)/(2*np.pi)**2
-    Z = simps(simps(z_n, axis), axis)/(2*np.pi)**2
-    W3 = simps(simps(w3_n, axis), axis)/(2*np.pi)**2
-
-    return E, W1, Z, W3
-
-#compute the energy at t_n
-def compute_E(w_hat_n):
+    if target == 'dE':
+        psi_hat_n = w_hat_n/k_squared_no_zero
+        psi_hat_n[0,0] = 0.0
+        psi_n = np.fft.irfft2(psi_hat_n)
+        e_n = -0.5*psi_n*w_n
+        return simps(simps(e_n, axis), axis)/(2*np.pi)**2
+    elif target == 'dZ':
+        z_n = 0.5*w_n**2
+        return simps(simps(z_n, axis), axis)/(2*np.pi)**2
+    elif target == 'dW1':
+        return simps(simps(w_n, axis), axis)/(2*np.pi)**2
+    elif target == 'dW3':
+        w3_n = w_n**3/3.0
+        return simps(simps(w3_n, axis), axis)/(2*np.pi)**2
+    else:
+        print('UNKNOWN QUANTITY OF INTEREST')
+        import sys; sys.exit()
     
-    psi_hat_n = w_hat_n/k_squared_no_zero
-    psi_hat_n[0,0] = 0.0
-    psi_n = np.fft.irfft2(psi_hat_n)
-    w_n = np.fft.irfft2(w_hat_n)
-    
-    e_n = -0.5*psi_n*w_n
-
-    E = simps(simps(e_n, axis), axis)/(2*np.pi)**2
-    
-    return E
-
-#compute the enstrophy at t_n
-def compute_Z(w_hat_n):
-    
-    w_n = np.fft.irfft2(w_hat_n)
-    
-    z_n = 0.5*w_n**2
-
-    Z = simps(simps(z_n, axis), axis)/(2*np.pi)**2
-    
-    return Z
-
-#compute all QoI at t_n
-def compute_qoi(w_hat_n, verbose=True):
-
-    #compute stats using Fourier coefficients - is faster
-    #convert rfft2 coefficients to fft2 coefficients
-    w_hat_full = np.zeros([N, N]) + 0.0j
-    w_hat_full[0:N, 0:int(N/2+1)] = w_hat_n
-    w_hat_full[map_I, map_J] = np.conjugate(w_hat_n[I, J])
-    w_hat_full *= P_full
-    
-    #compute Fourier coefficients of stream function
-    psi_hat_full = w_hat_full/k_squared_no_zero_full
-    psi_hat_full[0,0] = 0.0
-
-    #compute energy and enstrophy (density)
-    Z = 0.5*np.sum(w_hat_full*np.conjugate(w_hat_full))/N**4
-    E = -0.5*np.sum(psi_hat_full*np.conjugate(w_hat_full))/N**4
-    U = 0.5*np.sum(psi_hat_full*np.conjugate(F_hat_full))/N**4
-    S = 0.5*np.sum(psi_hat_full*np.conjugate(psi_hat_full))/N**4
-    O = 0.5*np.sum(k_squared_full*w_hat_full*np.conjugate(w_hat_full))/N**4
-    V = 0.5*np.sum(w_hat_full*np.conjugate(F_hat_full))/N**4
-
-    Sprime = E**2/Z - S
-    Zprime = Z - E**2/S
-
-    if verbose:
-        #print 'Energy = ', E, ', enstrophy = ', Z
-        print('Z = ', Z.real, ', E = ', E.real)
-        print('U = ', U.real, ', S = ', S.real)
-        print('V = ', V.real, ', O = ', O.real)
-        print('Sprime = ', Sprime.real, ', Zprime = ', Zprime.real)
-
-    return Z.real, E.real, U.real, S.real, V.real, O.real, Sprime.real, Zprime.real
+##compute all QoI at t_n
+#def compute_qoi(w_hat_n, verbose=True):
+#
+#    #compute stats using Fourier coefficients - is faster
+#    #convert rfft2 coefficients to fft2 coefficients
+#    w_hat_full = np.zeros([N, N]) + 0.0j
+#    w_hat_full[0:N, 0:int(N/2+1)] = w_hat_n
+#    w_hat_full[map_I, map_J] = np.conjugate(w_hat_n[I, J])
+#    w_hat_full *= P_full
+#    
+#    #compute Fourier coefficients of stream function
+#    psi_hat_full = w_hat_full/k_squared_no_zero_full
+#    psi_hat_full[0,0] = 0.0
+#
+#    #compute energy and enstrophy (density)
+#    Z = 0.5*np.sum(w_hat_full*np.conjugate(w_hat_full))/N**4
+#    E = -0.5*np.sum(psi_hat_full*np.conjugate(w_hat_full))/N**4
+#    U = 0.5*np.sum(psi_hat_full*np.conjugate(F_hat_full))/N**4
+#    S = 0.5*np.sum(psi_hat_full*np.conjugate(psi_hat_full))/N**4
+#    O = 0.5*np.sum(k_squared_full*w_hat_full*np.conjugate(w_hat_full))/N**4
+#    V = 0.5*np.sum(w_hat_full*np.conjugate(F_hat_full))/N**4
+#
+#    Sprime = E**2/Z - S
+#    Zprime = Z - E**2/S
+#
+#    if verbose:
+#        #print 'Energy = ', E, ', enstrophy = ', Z
+#        print('Z = ', Z.real, ', E = ', E.real)
+#        print('U = ', U.real, ', S = ', S.real)
+#        print('V = ', V.real, ', O = ', O.real)
+#        print('Sprime = ', Sprime.real, ', Zprime = ', Zprime.real)
+#
+#    return Z.real, E.real, U.real, S.real, V.real, O.real, Sprime.real, Zprime.real
 
 def compute_int(X1_hat, X2_hat):
     
@@ -315,49 +275,19 @@ def compute_int(X1_hat, X2_hat):
     X2 = np.fft.irfft2(X2_hat)
     
     return simps(simps(X1*X2, axis), axis)/(2*np.pi)**2
-   
-#######################
-# ORTHOGONAL PATTERNS #
-#######################
 
-def get_psi_hat_prime(w_hat_n):
-    
-    psi_hat_n = w_hat_n/k_squared_no_zero
-    psi_hat_n[0, 0] = 0.
-
-    psi_n = np.fft.irfft2(psi_hat_n)
-    w_n = np.fft.irfft2(w_hat_n)
-
-    nom = simps(simps(w_n*psi_n, axis), axis)
-    denom = simps(simps(w_n*w_n, axis), axis)
-
-    return psi_hat_n - nom/denom*w_hat_n
-
-def get_w_hat_prime(w_hat_n):
-    
-    psi_hat_n = w_hat_n/k_squared_no_zero
-    psi_hat_n[0, 0] = 0.
-
-    psi_n = np.fft.irfft2(psi_hat_n)
-    w_n = np.fft.irfft2(w_hat_n)
-
-    nom = simps(simps(w_n*psi_n, axis), axis)
-    denom = simps(simps(psi_n*psi_n, axis), axis)
-
-    return w_hat_n - nom/denom*psi_hat_n
-
-#compute the (temporal) correlation coeffient 
-def corr_coef(X, Y):
-    return np.mean((X - np.mean(X))*(Y - np.mean(Y)))/(np.std(X)*np.std(Y))
-
-#recursive formulas for the mean and variance
-def recursive_moments(X_np1, mu_n, sigma2_n, N):
-
-    mu_np1 = mu_n + (X_np1 - mu_n)/(N+1)
-
-    sigma2_np1 = sigma2_n + mu_n**2 - mu_np1**2 + (X_np1**2 - sigma2_n - mu_n**2)/(N+1)
-
-    return mu_np1, sigma2_np1
+##compute the (temporal) correlation coeffient 
+#def corr_coef(X, Y):
+#    return np.mean((X - np.mean(X))*(Y - np.mean(Y)))/(np.std(X)*np.std(Y))
+#
+##recursive formulas for the mean and variance
+#def recursive_moments(X_np1, mu_n, sigma2_n, N):
+#
+#    mu_np1 = mu_n + (X_np1 - mu_n)/(N+1)
+#
+#    sigma2_np1 = sigma2_n + mu_n**2 - mu_np1**2 + (X_np1**2 - sigma2_n - mu_n**2)/(N+1)
+#
+#    return mu_np1, sigma2_np1
 
 def freq_map():
     """
@@ -420,20 +350,16 @@ from scipy.integrate import simps
 import sys
 from drawnow import drawnow
 from scipy import stats
+import json
 
 plt.close('all')
 plt.rcParams['image.cmap'] = 'seismic'
 
 HOME = os.path.abspath(os.path.dirname(__file__))
 
-plt.close('all')
-plt.rcParams['image.cmap'] = 'seismic'
-
 #number of gridpoints in 1D
 I = 8
 N = 2**I
-
-N_Q = 2
 
 #2D grid
 h = 2*np.pi/N
@@ -443,7 +369,6 @@ axis = np.linspace(0, 2.0*np.pi, N)
 
 #frequencies
 k = np.fft.fftfreq(N)*N
-
 kx = np.zeros([N, int(N/2+1)]) + 0.0j
 ky = np.zeros([N, int(N/2+1)]) + 0.0j
 
@@ -481,8 +406,47 @@ P_U = P - P_LF
 P_full = get_P_full(Ncutoff)
 P_LF_full = get_P_full(Ncutoff_LF)
 
+#read flags from input file
+fpath = sys.argv[1]
+fp = open(fpath, 'r')
+
 binnumbers, bins = freq_map()
 N_bins = bins.size
+
+###################
+# Read input file #
+###################
+flags = json.loads(fp.readline())
+print('*********************')
+print('Simulation flags')
+print('*********************')
+
+for key in flags.keys():
+    vars()[key] = flags[key]
+    print(key, '=', flags[key])
+
+N_Q = int(fp.readline())
+
+targets = []
+V = []
+P_i = []
+
+for i in range(N_Q):
+    qoi_i = json.loads(fp.readline())
+    targets.append(qoi_i['target'])
+    V.append(qoi_i['V_i'])
+    k_min = qoi_i['k_min']
+    k_max = qoi_i['k_max']
+    P_i.append(get_P_k(k_min, k_max))
+    
+print('*********************')
+
+dW3_calc = np.in1d('dW3', targets)
+
+#N_Q = 2
+#k_min = Ncutoff_LF - 10 
+#k_max = Ncutoff_LF
+#k_max = np.max(P_LF_full*binnumbers)
 
 #map from the rfft2 coefficient indices to fft2 coefficient indices
 #Use: see compute_E_Z subroutine
@@ -508,53 +472,38 @@ mu = 1.0/(day*decay_time_mu)
 #start, end time, end time of data (training period), time step
 dt = 0.01
 t = 0.0*day
-t_end = t + 10.0*day
+t_end = t + 10*365*day
 n_steps = np.int(np.round((t_end-t)/dt))
 
 #############
 # USER KEYS #
 #############
 
-#simulation name
-sim_ID = 'gen_tau_4track'
 #framerate of storing data, plotting results, computing correlations (1 = every integration time step)
-#store_frame_rate = np.floor(5.0*day/dt).astype('int')
-store_frame_rate = 1
+store_frame_rate = np.floor(1.0*day/dt).astype('int')
+#store_frame_rate = 1
 plot_frame_rate = np.floor(1.0*day/dt).astype('int')
 #length of data array
 S = np.floor(n_steps/store_frame_rate).astype('int')
 
-#Manual specification of flags 
-
-state_store = False     #store the state at the end
-restart = False          #restart from prev state
-store = False            #store data
-plot = True            #plot results while running, requires drawnow package
-compute_ref = True     #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
-load_ref = False
-
-eddy_forcing_type = 'tau_ortho'  
-
-store_ID = sim_ID
+##Manual specification of flags 
+#state_store = True      #store the state at the end
+#restart = False         #restart from prev state
+#store = False           #store data
+#plot = True             #plot results while running, requires drawnow package
+#compute_ref = True      #compute the reference solution as well, keep at True, will automatically turn off in surrogate mode
+#
+#eddy_forcing_type = 'tau_ortho'  
+#simulation name
+#sim_ID = 'foo'
+store_ID = sim_ID 
     
 ###############################
 # SPECIFY WHICH DATA TO STORE #
 ###############################
 
 #TRAINING DATA SET
-
-QoI = ['z_n_HF', 'e_n_HF', #'w3_n_HF', 
-       'z_n_LF', 'e_n_LF', #'w3_n_LF', 
-       'src1', 'src2', #'src3',
-       'c_12', 'c_22', #'c_13', 'c_23', 'c_32', 'c_33',
-       'tau_1', 'tau_2',# 'tau_3',
-       'dE', 'dZ']#, 'dW3']
-
-#QoI = ['w_hat_n_LF', 'w_hat_n_HF']
-
-#PREDICTION DATA SET
-#QoI = ['z_n_LF', 'e_n_LF', 'w3_n_LF', 't']
-
+QoI = ['w_hat_n_LF', 'w_hat_n_HF', 'z_n_HF', 'e_n_HF', 'z_n_LF', 'e_n_LF']
 Q = len(QoI)
 
 #allocate memory
@@ -578,6 +527,7 @@ F = 2**1.5*np.cos(5*x)*np.cos(5*y);
 F_hat = np.fft.rfft2(F);
 F_hat_full = np.fft.fft2(F)
 
+#V_i for Q_i = (1, omega)
 V_hat_w1 = P_LF*np.fft.rfft2(np.ones([N,N]))
 
 if restart == True:
@@ -625,24 +575,11 @@ W1_HF = []; W1_LF = []
 TAU1 = []; TAU2 = []; TAU3 = []
 TEST = []
 
-if eddy_forcing_type == 'tau_ortho_mean':
-    fname = HOME + '/samples/gen_tau_t_3900.0.hdf5'
-    h5f = h5py.File(fname, 'r')
-    dE_mean = np.mean(h5f['dE'][:])
-    dZ_mean = np.mean(h5f['dZ'][:])
-    
-if load_ref == True:
-    fname = HOME + '/samples/gen_tau_t_3900.0.hdf5'
-    h5f = h5py.File(fname, 'r')  
-
-fig = plt.figure(figsize=[8, 8])
+if plot == True:
+    fig = plt.figure(figsize=[8, 4])
 
 #time loop
 for n in range(n_steps):
-    
-    #orthogonal patterns
-    psi_hat_n_prime = get_psi_hat_prime(w_hat_n_LF)
-    w_hat_n_prime = get_w_hat_prime(w_hat_n_LF)
 
     if compute_ref == True:
         
@@ -650,62 +587,27 @@ for n in range(n_steps):
         w_hat_np1_HF, VgradW_hat_n_HF = get_w_hat_np1(w_hat_n_HF, w_hat_nm1_HF, VgradW_hat_nm1_HF, P, norm_factor)
         
         #exact eddy forcing
-        EF_hat_nm1_exact = P_LF*VgradW_hat_nm1_HF - VgradW_hat_nm1_LF 
+#        EF_hat_nm1_exact = P_LF*VgradW_hat_nm1_HF - VgradW_hat_nm1_LF 
  
-        #exact tau_E and tau_Z
-        tau_E, tau_Z, dE, dZ = get_data_driven_tau_src_EZ(w_hat_n_LF, w_hat_n_HF, P_LF, 1.0, 1.0)
-    
-        #E & Z tracking eddy forcing
-        EF_hat_n_ortho = -tau_E*psi_hat_n_prime - tau_Z*w_hat_n_prime 
-
-        #reference energy and enstrophy
-        #e_np1_HF, z_np1_HF, _ = get_EZS(P_LF*w_hat_np1_HF)
-        e_n_HF, w1_n_HF, z_n_HF, w3_n_HF = get_EZS(P_LF*w_hat_n_HF)
-        
-    if load_ref == True:
-        e_n_HF = h5f['e_n_HF'][n]
-        z_n_HF = h5f['z_n_HF'][n]
-        w1_n_HF = h5f['w1_n_HF'][n]
-        w3_n_LF = h5f['w3_n_HF'][n]
-        
-    #######################################
-    # covariates (conditioning variables) #
-    #######################################
-    e_n_LF, w1_n_LF, z_n_LF, w3_n_LF = get_EZS(w_hat_n_LF)
-#    psi_n_LF = np.fft.irfft2(get_psi_hat(w_hat_n_LF))
-#    u_n_LF = 0.5*simps(simps(psi_n_LF*F, axis), axis)/(2.0*np.pi)**2
-#    w_n_LF = np.fft.irfft2(w_hat_n_LF)
-#    v_n_LF = 0.5*simps(simps(w_n_LF*F, axis), axis)/(2.0*np.pi)**2
-#    nabla2_w_n_LF = np.fft.irfft2(k_squared*w_hat_n_LF)
-#    o_n_LF = 0.5*simps(simps(nabla2_w_n_LF*w_n_LF, axis), axis)/(2.0*np.pi)**2
-
+#    e_n_LF, w1_n_LF, z_n_LF, w3_n_LF = get_qoi(P_i[0]*w_hat_n_LF)
    
     #exact orthogonal pattern surrogate
-    if eddy_forcing_type == 'tau_ortho' or eddy_forcing_type == 'tau_ortho_mean':
-        ###############################
-        # generalized scalar tracking #
-        ###############################
-        
+    if eddy_forcing_type == 'tau_ortho':
         psi_hat_n_LF = get_psi_hat(w_hat_n_LF)
         w_n_LF = np.fft.irfft2(w_hat_n_LF)
-        w_hat_n_LF_squared = P_LF*np.fft.rfft2(w_n_LF**2)
         
+        if dW3_calc:
+            w_hat_n_LF_squared = P_LF*np.fft.rfft2(w_n_LF**2)
+
         V_hat = np.zeros([N_Q, N, int(N/2+1)]) + 0.0j
-        V_hat[0] = -psi_hat_n_LF
-        V_hat[1] = V_hat_w1
-#        V_hat[2] = w_hat_n_LF
-#        V_hat[3] = w_hat_n_LF_squared
-        
-        if eddy_forcing_type == 'tau_ortho_mean':
-            dE = dE_mean
-            dZ = dZ_mean            
-        else:
-            dE = e_n_HF - e_n_LF
-            dW1 = w1_n_HF - w1_n_LF
-            dZ = z_n_HF - z_n_LF
-            dW3 = w3_n_HF - w3_n_LF
-            dQ = [dE, dZ]
-            
+       
+        dQ = []
+        for i in range(N_Q):
+            V_hat[i] = P_i[i]*eval(V[i])
+            Q_HF = get_qoi(P_i[i]*w_hat_n_HF, targets[i])
+            Q_LF = get_qoi(P_i[i]*w_hat_n_LF, targets[i])
+            dQ.append(Q_HF - Q_LF)
+
         EF_hat = reduced_r(V_hat, dQ)        
 
     #unparameterized solution
@@ -730,46 +632,39 @@ for n in range(n_steps):
     if j == plot_frame_rate and plot == True:
         j = 0
 
-#        e_n_HF, z_n_HF, w3_n_HF = get_EZS(P_LF*w_hat_n_HF)
-#        e_n_LF, z_n_LF, w3_n_LF = get_EZS(w_hat_n_LF)
-#        EF = np.fft.irfft2(EF_hat)
-#        
-#        w_n_LF = np.fft.irfft2(w_hat_n_LF)
-#        w_n_HF = np.fft.irfft2(P_LF*w_hat_n_HF)
-#        
-#        #convert rfft2 coefficients to fft2 coefficients
-#        w_hat_full = np.zeros([N, N]) + 0.0j
-#        w_hat_full[0:N, 0:int(N/2+1)] = w_hat_n_LF
-#        w_hat_full[map_I, map_J] = np.conjugate(w_hat_n_LF[I, J])
-#        w_hat_full *= P_full
-#        
-#        w_n_LF_full = np.fft.ifft2(w_hat_full)
+        e_n_HF = get_qoi(P_LF*w_hat_n_HF, 'dE')
+        e_n_LF = get_qoi(P_LF*w_hat_n_LF, 'dE')
+        z_n_HF = get_qoi(P_LF*w_hat_n_HF, 'dZ')
+        z_n_LF = get_qoi(P_LF*w_hat_n_LF, 'dZ')
         
         T.append(t)
         E_LF.append(e_n_LF); Z_LF.append(z_n_LF)
         E_HF.append(e_n_HF); Z_HF.append(z_n_HF)
-        W3_HF.append(w3_n_HF); W3_LF.append(w3_n_LF)
-        W1_HF.append(w1_n_HF); W1_LF.append(w1_n_LF)
+#        W3_HF.append(_w3_n_HF); W3_LF.append(_w3_n_LF)
+#        W1_HF.append(_w1_n_HF); W1_LF.append(_w1_n_LF)
 
-#        TAU1.append(tau_1); TAU2.append(tau_2); #TAU3.append(tau_3)
-        
-        print('e_n_HF: %.4e' % e_n_HF, 'w1_n_HF: %.4e' % w1_n_HF, 'z_n_HF: %.4e' % z_n_HF, 'w3_n_HF: %.4e' % w3_n_HF)
-        print('e_n_LF: %.4e' % e_n_LF, 'w1_n_LF: %.4e' % w1_n_LF, 'z_n_LF: %.4e' % z_n_LF, 'w3_n_LF: %.4e' % w3_n_LF)
+        print('e_n_HF: %.4e' % e_n_HF, 'z_n_HF: %.4e' % z_n_HF)
+        print('e_n_LF: %.4e' % e_n_LF, 'z_n_LF: %.4e' % z_n_LF)
 
-#        print('e_n_HF: %.4e' % e_n_HF, 'z_n_HF: %.4e' % z_n_HF)
-#        print('e_n_LF: %.4e' % e_n_LF, 'z_n_LF: %.4e' % z_n_LF)
+#        print('e_n_HF: %.4e' % _e_n_HF, 'w1_n_HF: %.4e' % _w1_n_HF,
+#              'z_n_HF: %.4e' % _z_n_HF, 'w3_n_HF: %.4e' % _w3_n_HF)
+#        print('e_n_LF: %.4e' % _e_n_LF, 'w1_n_LF: %.4e' % _w1_n_LF,
+#              'z_n_LF: %.4e' % _z_n_LF, 'w3_n_LF: %.4e' % _w3_n_LF)
         
-#        E_spec_HF, Z_spec_HF = spectrum(w_hat_n_HF, P_LF_full)
-#        E_spec_LF, Z_spec_LF = spectrum(w_hat_n_LF, P_LF_full)
-        
-        #compute_qoi(w_hat_n_LF)
+        E_spec_HF, Z_spec_HF = spectrum(w_hat_n_HF, P_full)
+        E_spec_LF, Z_spec_LF = spectrum(w_hat_n_LF, P_LF_full)
         
         drawnow(draw)
         
     #store samples to dict
     if j2 == store_frame_rate and store == True:
         j2 = 0
-        
+
+        e_n_HF = get_qoi(P_LF*w_hat_n_HF, 'dE')
+        e_n_LF = get_qoi(P_LF*w_hat_n_LF, 'dE')
+        z_n_HF = get_qoi(P_LF*w_hat_n_HF, 'dZ')
+        z_n_LF = get_qoi(P_LF*w_hat_n_LF, 'dZ')
+
         if np.mod(n, np.round(day/dt)) == 0:
             print('n = ', n, ' of ', n_steps)
 

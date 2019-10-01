@@ -5,15 +5,110 @@ def draw():
     plt.plot(bins+1e-8, mean_E_spec_UN, ':', label=r'$\mathrm{eddy\;visc.}$')
     plt.legend(loc=0)
 
+    ax = plt.gca()
+    axins = zoomed_inset_axes(ax, 3, loc=3)
+    axins.plot(bins+1e-8, mean_E_spec_HF, '--')
+    axins.plot(bins+1e-8, mean_E_spec_LF)
+    axins.plot(bins+1e-8, mean_E_spec_UN, ':')
+
+    ax.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
+    ax.plot([np.sqrt(2)*Ncutoff_LF + 1, np.sqrt(2)*Ncutoff_LF + 1], [10, 0], 'lightgray')
+
+    # sub region of the original image
+    # K <= k <= ceil(sqrt(2)*K)
+    #x1, x2, y1, y2 = 20, 33, 10**-8, 2*10**-7
+    # K - 5 <= k <= K
+    x1, x2, y1, y2 = 15, 22, 5*10**-8, 5*10**-7
+    axins.set_xscale('log')
+    axins.set_yscale('log')
+    axins.set_xlim(x1, x2)
+    axins.set_ylim(y1, y2)
+  
+    axins.set_xticks([])
+    axins.set_yticks([])
+   
+    # draw a bbox of the region of the inset axes in the parent axes and
+    # connecting lines between the bbox and the inset axes area
+    mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="0.5")
+
     plt.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
     plt.plot([np.sqrt(2)*Ncutoff_LF + 1, np.sqrt(2)*Ncutoff_LF + 1], [10, 0], 'lightgray')
+
+    #########################3
+
     plt.subplot(122, xscale='log', yscale='log', title=r'enstrophy', xlabel=r'$k$')
     plt.plot(bins+1e-8, mean_Z_spec_HF, '--')
     plt.plot(bins+1e-8, mean_Z_spec_LF)
     plt.plot(bins+1e-8, mean_Z_spec_UN, ':')
 
+    ax = plt.gca()
+    axins = zoomed_inset_axes(ax, 3, loc=3)
+    axins.plot(bins+1e-8, mean_Z_spec_HF, '--')
+    axins.plot(bins+1e-8, mean_Z_spec_LF)
+    axins.plot(bins+1e-8, mean_Z_spec_UN, ':')
+
+    ax.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
+    ax.plot([np.sqrt(2)*Ncutoff_LF + 1, np.sqrt(2)*Ncutoff_LF + 1], [10, 0], 'lightgray')
+
+    # sub region of the original image
+    # K <= k <= ceil(sqrt(2)*K)
+    #x1, x2, y1, y2 = 20, 33, 10**-8, 2*10**-7
+    # K - 5 <= k <= K
+    x1, x2, y1, y2 = 15, 22, 2*10**-5, 2*10**-4
+    axins.set_xscale('log')
+    axins.set_yscale('log')
+    axins.set_xlim(x1, x2)
+    axins.set_ylim(y1, y2)
+
+    axins.set_xticks([])
+    axins.set_yticks([])
+   
+    # draw a bbox of the region of the inset axes in the parent axes and
+    # connecting lines between the bbox and the inset axes area
+    mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="0.5")
+
     plt.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
     plt.plot([np.sqrt(2)*Ncutoff_LF + 1, np.sqrt(2)*Ncutoff_LF + 1], [10, 0], 'lightgray')
+
+    plt.tight_layout()
+    
+def draw2():
+    plt.figure(figsize=[4,4])
+    plt.subplot(111, xscale='log', yscale='log', title=r'energy', xlabel=r'$k$')
+    plt.plot(bins+1e-8, mean_E_spec_HF, '--', label = r'$\mathrm{reference}$')
+    plt.plot(bins+1e-8, mean_E_spec_LF, label=r'$\mathrm{reduced}$')
+    plt.plot(bins+1e-8, mean_E_spec_UN, ':', label=r'$\mathrm{eddy\;visc.}$')
+    plt.legend(loc=0)
+
+    ax = plt.gca()
+    axins = zoomed_inset_axes(ax, 3, loc=3)
+    axins.plot(bins+1e-8, mean_E_spec_HF, '--')
+    axins.plot(bins+1e-8, mean_E_spec_LF)
+    axins.plot(bins+1e-8, mean_E_spec_UN, ':')
+
+    ax.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
+    ax.plot([np.sqrt(2)*Ncutoff_LF + 1, np.sqrt(2)*Ncutoff_LF + 1], [10, 0], 'lightgray')
+
+    # sub region of the original image
+    # K <= k <= ceil(sqrt(2)*K)
+    #x1, x2, y1, y2 = 20, 33, 10**-8, 2*10**-7
+    # K - 5 <= k <= K
+    x1, x2, y1, y2 = 15, 22, 5*10**-8, 5*10**-7
+    axins.set_xscale('log')
+    axins.set_yscale('log')
+    axins.set_xlim(x1, x2)
+    axins.set_ylim(y1, y2)
+  
+    axins.set_xticks([])
+    axins.set_yticks([])
+   
+    # draw a bbox of the region of the inset axes in the parent axes and
+    # connecting lines between the bbox and the inset axes area
+    mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="0.5")
+
+    plt.plot([Ncutoff_LF + 1, Ncutoff_LF + 1], [10, 0], 'lightgray')
+    plt.plot([np.sqrt(2)*Ncutoff_LF + 1, np.sqrt(2)*Ncutoff_LF + 1], [10, 0], 'lightgray')
+
     plt.tight_layout()
 
 #compute spectral filter
@@ -117,6 +212,8 @@ import matplotlib.pyplot as plt
 import os
 import h5py
 from scipy import stats
+from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
+from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 
 plt.close('all')
 
@@ -191,10 +288,11 @@ I, J = np.meshgrid(I, J)
 ###########################
 # load the reference data #
 ###########################
+
 Omega = 7.292*10**-5
 day = 24*60**2*Omega
-sim_ID = 'gen_tau_spectrum'
-t_end = (250.0 + 10*365.)*day 
+sim_ID = 'gen_tau_P_k_equal_nu_4'
+t_end = (10*365)*day 
 
 fname = HOME + '/samples/' + sim_ID + '_t_' + str(np.around(t_end/day,1)) + '.hdf5'
 fname_unparam = HOME + '/samples/unparam_spectrum_t_3900.0.hdf5'  
@@ -206,37 +304,51 @@ fig = plt.figure(figsize=[8,4])
 try:
     h5f = h5py.File(fname, 'r')
     print(h5f.keys())
-
-    h5f_unparam = h5py.File(fname_unparam, 'r')
-    print(h5f_unparam.keys())
     
     w_hat_n_HF = h5f['w_hat_n_HF']
     w_hat_n_LF = h5f['w_hat_n_LF']
-    w_hat_n_UN = h5f_unparam['w_hat_n_LF']
 
     S = w_hat_n_HF.shape[0]
     
     mean_E_spec_HF = 0.0; mean_E_spec_LF = 0.0
     mean_Z_spec_HF = 0.0; mean_Z_spec_LF = 0.0
-    mean_E_spec_UN = 0.0; mean_Z_spec_UN = 0.0
     
     for s in range(S):
-        E_spec_HF, Z_spec_HF = spectrum(w_hat_n_HF[s], P_LF_full)
+        E_spec_HF, Z_spec_HF = spectrum(w_hat_n_HF[s], P_full)
         E_spec_LF, Z_spec_LF = spectrum(w_hat_n_LF[s], P_LF_full)
-        E_spec_UN, Z_spec_UN = spectrum(w_hat_n_UN[s], P_LF_full)
+#        E_spec_UN, Z_spec_UN = spectrum(w_hat_n_UN[s], P_LF_full)
 
         mean_E_spec_HF = recursive_mean(E_spec_HF, mean_E_spec_HF, s)
         mean_E_spec_LF = recursive_mean(E_spec_LF, mean_E_spec_LF, s)
         mean_Z_spec_HF = recursive_mean(Z_spec_HF, mean_Z_spec_HF, s)
         mean_Z_spec_LF = recursive_mean(Z_spec_LF, mean_Z_spec_LF, s)
-        mean_E_spec_UN = recursive_mean(E_spec_UN, mean_E_spec_UN, s)
-        mean_Z_spec_UN = recursive_mean(Z_spec_UN, mean_Z_spec_UN, s)
-    draw()
+#        mean_E_spec_UN = recursive_mean(E_spec_UN, mean_E_spec_UN, s)
+#        mean_Z_spec_UN = recursive_mean(Z_spec_UN, mean_Z_spec_UN, s)
 
 except IOError:
     print('*****************************')
     print(fname, ' not found')
     print('*****************************')
-    
 
+try:
+
+    h5f_unparam = h5py.File(fname_unparam, 'r')
+    print(h5f_unparam.keys())
+    
+    w_hat_n_UN = h5f_unparam['w_hat_n_LF']
+    S = w_hat_n_UN.shape[0]
+    mean_E_spec_UN = 0.0; mean_Z_spec_UN = 0.0
+
+    for s in range(S):
+        print(s)
+        E_spec_UN, Z_spec_UN = spectrum(w_hat_n_UN[s], P_LF_full)
+        mean_E_spec_UN = recursive_mean(E_spec_UN, mean_E_spec_UN, s)
+        mean_Z_spec_UN = recursive_mean(Z_spec_UN, mean_Z_spec_UN, s)
+
+except IOError:
+    print('*****************************')
+    print(fname_unparam, ' not found')
+    print('*****************************')
+
+draw2()
 plt.show()

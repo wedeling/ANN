@@ -1,0 +1,4 @@
+{"sim_ID": "", "state_store": false, "restart": true, "store": false, "plot": true, "compute_ref": true, "eddy_forcing_type": "tau_ortho"}
+2
+{"target": "dE", "V_i": "-psi_hat_n_LF", "k_min": 0, "k_max": 21}
+{"target": "dZ", "V_i": "w_hat_n_LF", "k_min": 0, "k_max": 21}
