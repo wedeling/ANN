@@ -1,9 +1,19 @@
 def get_pde(X, Npoints = 100):
 
-    kernel = stats.gaussian_kde(X, bw_method='scott')
-    x = np.linspace(np.min(X), np.max(X), Npoints)
-    pde = kernel.evaluate(x)
-    return x, pde
+#    kernel = stats.gaussian_kde(X, bw_method='scott')
+#    x = np.linspace(np.min(X), np.max(X), Npoints)
+#    pde = kernel.evaluate(x)
+#    return x, pde
+    
+    X_min = np.min(X)
+    X_max = np.max(X)
+    bandwidth = (X_max-X_min)/40
+    
+    kde = KernelDensity(kernel='gaussian', bandwidth=bandwidth).fit(X.reshape(-1, 1))
+    domain = np.linspace(X_min, X_max, Npoints).reshape(-1, 1)
+    log_dens = kde.score_samples(domain)
+    
+    return domain, np.exp(log_dens)    
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -11,6 +21,7 @@ import os
 import h5py
 from itertools import product, cycle, combinations
 from scipy import stats
+from sklearn.neighbors.kde import KernelDensity
 import sys
 import json
 
@@ -50,25 +61,25 @@ try:
 
     h5f_unparam = h5py.File(fname_unparam, 'r')
     print(h5f_unparam.keys())
-    x_E_UN, pdf_E_UN = get_pde(h5f_unparam['e_n_LF'])
-    x_Z_UN, pdf_Z_UN = get_pde(h5f_unparam['z_n_LF'])
-    x_W3_UN, pdf_W3_UN = get_pde(h5f_unparam['w3_n_LF'])
+    x_E_UN, pdf_E_UN = get_pde(h5f_unparam['e_n_LF'][0:-1:10])
+    x_Z_UN, pdf_Z_UN = get_pde(h5f_unparam['z_n_LF'][0:-1:10])
+    x_W3_UN, pdf_W3_UN = get_pde(h5f_unparam['w3_n_LF'][0:-1:10])
 
     ax1.plot(x_E_UN, pdf_E_UN, ':', label=r'$\mathrm{eddy\;visc}$')
     ax2.plot(x_Z_UN, pdf_Z_UN, ':', label=r'$\mathrm{eddy\;visc}$')
     ax3.plot(x_W3_UN, pdf_W3_UN, ':', label=r'$\mathrm{eddy\;visc}$')
 
-    x_E_LF, pdf_E_LF = get_pde(h5f['e_n_LF'])
-    x_Z_LF, pdf_Z_LF = get_pde(h5f['z_n_LF'])
-    x_W3_LF, pdf_W3_LF = get_pde(h5f['w3_n_LF'])
+    x_E_LF, pdf_E_LF = get_pde(h5f['e_n_LF'][0:-1:10])
+    x_Z_LF, pdf_Z_LF = get_pde(h5f['z_n_LF'][0:-1:10])
+    x_W3_LF, pdf_W3_LF = get_pde(h5f['w3_n_LF'][:])
 
     ax1.plot(x_E_LF, pdf_E_LF, label=r'$\mathrm{reduced}$')
     ax2.plot(x_Z_LF, pdf_Z_LF, label=r'$\mathrm{reduced}$')
     ax3.plot(x_W3_LF, pdf_W3_LF, label=r'$\mathrm{reduced}$')
    
-    x_E_HF, pdf_E_HF = get_pde(h5f['e_n_HF'])
-    x_Z_HF, pdf_Z_HF = get_pde(h5f['z_n_HF'])
-    x_W3_HF, pdf_W3_HF = get_pde(h5f['w3_n_HF'])
+    x_E_HF, pdf_E_HF = get_pde(h5f['e_n_HF'][0:-1:10])
+    x_Z_HF, pdf_Z_HF = get_pde(h5f['z_n_HF'][0:-1:10])
+    x_W3_HF, pdf_W3_HF = get_pde(h5f['w3_n_HF'][0:-1:10])
 
     #x_E_UP, pdf_E_UP = get_pde(h5f['e_n_UP'])
     #x_Z_UP, pdf_Z_UP = get_pde(h5f['z_n_UP'])
@@ -87,15 +98,15 @@ try:
    
     plt.tight_layout()
 
-#    fig = plt.figure()
-#    plt.subplot(121, title=r'$\Delta E$', xlabel=r'$t$')
-#    plt.plot(h5f['t'], h5f['e_n_LF'], 'r')
-#    plt.plot(h5f['t'], h5f['e_n_HF'], 'b')
-#    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-#    plt.subplot(122, title=r'$\Delta Z$', xlabel=r'$t$')
-#    plt.plot(h5f['t'], h5f['z_n_LF'], 'r')
-#    plt.plot(h5f['t'], h5f['z_n_HF'], 'b')
-#    plt.tight_layout()
+    fig = plt.figure(figsize=[8,4])
+    t = h5f_unparam['t'][:]
+    plt.subplot(121, title=r'$\Delta E$', xlabel=r'$t\;\mathrm{[days]}$')
+    plt.plot(t/day, h5f['dE'])
+    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+    plt.subplot(122, title=r'$\Delta Z$', xlabel=r'$t\;\mathrm{[days]}$')
+    plt.plot(t/day, h5f['dZ'])
+    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+    plt.tight_layout()
 
 except IOError:
     print('*****************************')
